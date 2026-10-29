@@ -4,6 +4,34 @@ All notable changes to **Aegis AI** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-10-30
+
+### Added
+- **Unified Premium Design System Across Entire Application**:
+  - Implemented mathematical typography scale in `:root` (`--font-size-2xs` through `--font-size-2xl`, `--line-height-tight`, `--line-height-normal`, `--line-height-relaxed`).
+  - Implemented systematic spacing scale in `:root` (`--space-3xs` through `--space-2xl`) and elevation tokens (`--shadow-sm` through `--shadow-popover`).
+  - Unified color tokens centrally: Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), Secondary surface (`#15171D`), Elevated surface (`#1B1D25`), Platinum text (`#E6E4EC`), Slate text (`#A2A2AF`), Muted text (`#777986`), Electric Violet (`#A78BFA`), Violet hover (`#B9A5FF`), Hairline border (`#292B32`), Success (`#62C9A0`), Warning (`#E7B96A`), Error (`#F07878`).
+- **Shared Component Foundation (7 Cohesive Views)**:
+  - **Main Chat**: Refined message rows, unified action toolbars (Copy, Retry), and memory pills sharing identical token geometry and micro-transitions.
+  - **Skills View**: Modernized `.skill-catalog-card` with `.btn-primary` activation actions, `.tool-tag` monospace badges, and structured typography hierarchy.
+  - **Memory View**: Standardized `.tab-pill-bar`, elevated `.memory-card` containers, and flattened directive creation form (completely eliminating card-in-card nesting).
+  - **Approvals View**: Upgraded `.approval-item-card` with `.status-pill` badges (`ready`, `pending`, `rejected`), syntax-highlighted diff boxes, and clear decision action groups.
+  - **Workspace View**: Upgraded `.workspace-header-info`, SVG file explorer items (eliminating raw emoji glyphs), and refined `.file-preview-box` with monospace code typography.
+  - **Audit View**: Standardized `.data-table` / `.audit-table` with sticky graphite header, alternating rows, monospace timestamps (`.mono-time`), and status pill indicators.
+  - **Settings & Provider Diagnostics View**: Implemented dedicated `#modalSettings` modal dialog displaying active provider, model identifiers, loopback network interfaces (`127.0.0.1`), directory traversal guard invariants, and live connectivity diagnostics (`#btnRunDiagnostics`).
+- **Pure Geometric SVG Close Buttons**:
+  - Eliminated all raw HTML text character entities (`&times;`) across all modal headers, search inputs, and approval panels, replacing them with accessible, responsive SVG close icon buttons (`aria-label="Close modal"`).
+- **Navigation Controls**:
+  - Added dedicated Settings trigger `#btnOpenSettingsModal` to the sidebar footer and `#btnTopbarSettings` to the topbar for seamless configuration access from any view.
+- **Automated Test Coverage**:
+  - Added `test_frontend_unified_design_system_and_settings()` in `tests/test_frontend.py` verifying design tokens, shared components, SVG close buttons, and Settings modal.
+  - Total automated tests passing: 56 Python tests + 11 Node JavaScript tests (100% pass rate).
+
+### Changed
+- Bumped application version to `0.7.0` in `app/__init__.py`, `pyproject.toml`, and documentation suite.
+
+---
+
 ## [0.6.0] — 2026-10-30
 
 ### Added

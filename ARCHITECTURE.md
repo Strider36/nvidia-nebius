@@ -1,6 +1,6 @@
 # Aegis AI — System Architecture Document
 
-**Version:** 0.6.0  
+**Version:** 0.7.0  
 **Status:** Approved & Current Baseline  
 **Date:** 2026-10-30  
 
@@ -11,7 +11,7 @@
 Aegis AI is a privacy-first, developer-centric personal AI operator and autonomous coding assistant built around three foundational pillars:
 1. **Dual-Provider Inference with Strict Isolation & Native Streaming**: Seamlessly switch between zero-data-leakage local inference via **Ollama** (`http://127.0.0.1:11434`) running **NVIDIA Nemotron 3.5 Bolt E4B** and high-throughput cloud inference via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`). Supports native real-time SSE token streaming (`POST /api/chat/stream`) and strict isolation with zero silent fallbacks.
 2. **Human-in-the-Loop Security & Workspace Sandboxing**: All file modifications and shell executions are sandboxed inside `./workspace` (or configured `AEGIS_WORKSPACE`). Automatic timestamped backups are generated in `.aegis_backups/`, and every patch or allowlisted test runner command requires explicit human review and approval.
-3. **Obsidian & Electric Violet Design System & Motion Physics**: Distinctive developer-first design identity built on Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`), Platinum text (`#E6E4EC`), and Electric Violet accents (`#A78BFA`). Features crisp hairline borders (`#292B32`), bespoke geometric SVG icons (zero emoji glyphs), a zero-dependency multi-language syntax highlighter, resilient Markdown parsing, true client-side cancellation via `AbortController`, and a cohesive physics-based motion system (`--ease-out`).
+3. **Unified Premium Design System Across Every Application View**: Distinctive developer-first design identity built on Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`), Platinum text (`#E6E4EC`), and Electric Violet accents (`#A78BFA`). Features crisp hairline borders (`#292B32`), mathematical typography and systematic spacing tokens, a shared component foundation (`.btn-*`, `.status-pill`, `.data-table`, `.empty-state`, `.panel-card`), a standardized modal subsystem, bespoke geometric SVG icons (zero emoji glyphs), a zero-dependency multi-language syntax highlighter, and a cohesive physics-based motion system (`--ease-out`).
 
 ---
 
@@ -26,8 +26,18 @@ Aegis AI is a privacy-first, developer-centric personal AI operator and autonomo
 |  | - Realtime Search & Date  |  | - 48rem Focused Column        |  | - Native SSE Token Decoding   |  |
 |  | - Grouped History Items   |  | - Obsidian/Graphite Surfaces  |  | - Auto-Scroll Lock (<=160px)  |  |
 |  | - Mobile Off-Canvas Drawer|  | - Bespoke Geometric SVG Icons |  | - Blinking Cursor & Markdown  |  |
-|  +---------------------------+  +-------------------------------+  | - AbortController (#btnStop)  |  |
-|                                                                    +-------------------------------+  |
+|  | - Settings Modal Trigger  |  | - Flat Surface Hierarchy      |  | - AbortController (#btnStop)  |  |
+|  +---------------------------+  +-------------------------------+  +-------------------------------+  |
+|                                                                                                       |
+|  +-------------------------------------------------------------------------------------------------+  |
+|  | Standardized Modal Dialog Subsystem (.modal-content, .modal-title-group, .btn-close)             |  |
+|  | - Skills Catalog: Dynamic grid, .tool-tag badges, .status-pill indicators                      |  |
+|  | - Memory Vault: Flat elevated add form, category filter pills, .memory-card list                |  |
+|  | - Approvals Center: Unified diff viewer, risk badges, approve/reject workflow                   |  |
+|  | - Workspace Explorer: Sandboxed directory navigation, SVG file tree, code preview              |  |
+|  | - Security Audit: High-density data table, sticky graphite headers, monospace timestamps        |  |
+|  | - Settings & Diagnostics: Live provider verification, network boundary audits, health check    |  |
+|  +-------------------------------------------------------------------------------------------------+  |
 +-------------------------------------------------------------------------------------------------------+
                                                    |
                                                    | HTTP REST / SSE (text/event-stream)
@@ -90,10 +100,10 @@ Aegis AI is a privacy-first, developer-centric personal AI operator and autonomo
 
 ---
 
-## 3. Design System & Motion System Architecture (v0.5.0)
+## 3. Unified Design System & Styling Architecture (v0.7.0)
 
-### 3.1 Design System Tokens & Surface Hierarchy
-Centralized in `frontend/styles.css`:
+### 3.1 Centralized Design Tokens
+Centralized in `frontend/styles.css` without ad-hoc rules:
 ```css
 :root {
   /* Surfaces */
@@ -125,10 +135,47 @@ Centralized in `frontend/styles.css`:
   --color-success: #62C9A0;    /* Sage mint */
   --color-warning: #E7B96A;    /* Warm amber */
   --color-error: #F07878;      /* Coral rose */
+
+  /* Mathematical Typography Scale */
+  --font-size-2xs: 0.68rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.82rem;
+  --font-size-base: 0.88rem;
+  --font-size-md: 0.95rem;
+  --font-size-lg: 1.08rem;
+  --font-size-xl: 1.30rem;
+  --font-size-2xl: 1.60rem;
+
+  /* Systematic Spacing Scale */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
 }
 ```
 
-### 3.2 Motion System Architecture
+### 3.2 Shared Component Foundation
+Every page in Aegis AI reuses a core set of standard components:
+1. **Buttons (`.btn-*`)**: `.btn-primary` (Electric Violet), `.btn-secondary` (Graphite surface), `.btn-outline` (Hairline border), `.btn-ghost` (Transparent interactive), `.btn-danger` (Coral rose state), and `.btn-close` (28x28px geometric SVG icon button).
+2. **Status Pills (`.status-pill`)**: Semantic badge with a glowing status dot (`.status-pill.success`, `.status-pill.warning`, `.status-pill.error`, `.status-pill.active`).
+3. **Data Tables (`.data-table`, `.audit-table`)**: Sticky graphite headers (`#101116`), subtle hairline borders (`#292B32`), high-density rows, and monospace timestamps (`.mono-time`).
+4. **Empty States (`.empty-state`)**: Centered geometric SVG icons, clear primary headings, and secondary action hints.
+5. **Panel Cards (`.panel-card`, `.list-item-card`)**: Controlled single-layer elevation with subtle border transition on hover.
+6. **Form Controls (`.form-control`)**: Graphite background, hairline border `#292B32`, Electric Violet focus ring, clear label hierarchy.
+7. **Tabs (`.tab-pill-bar`, `.btn-tab`)**: Segmented pill bars for memory and workspace filtering.
+
+### 3.3 Modal Dialog Subsystem
+All modal dialogs (Skills, Memory, Approvals, Workspace, Audit, Settings) share a unified layout:
+- **Header**: `.modal-title-group` with bespoke geometric SVG icon, crisp `<h3>` title, and `.modal-subtitle` explanation.
+- **Close Button**: Standard `.btn-close` housing an accessible SVG icon (`aria-label="Close modal"`).
+- **Body & Footer**: Standardized padding (`--space-lg`), secondary surface background, and clear separation lines.
+- **Zero Card-in-Card Nesting**: Elimination of redundant nested `.card` blocks inside dialogs, maintaining visual clarity.
+
+### 3.4 Motion System Architecture
 - **Physics Tokens**:
   - `--ease-out`: `cubic-bezier(0.16, 1, 0.3, 1)`
   - `--ease-in-out`: `cubic-bezier(0.4, 0, 0.2, 1)`
@@ -142,8 +189,8 @@ Centralized in `frontend/styles.css`:
   - `@keyframes dotPulse`: Restrained thinking pulse wave.
 - **Accessibility**: `@media (prefers-reduced-motion: reduce)` zeroes out animation durations, providing instant layout presentation for sensitive users.
 
-### 3.3 Pure Geometric SVG Iconography
-Platform-dependent emoji glyphs (`📋`, `🔍`, `🐞`, `🧪`, `🧠`) have been entirely eliminated. The interface utilizes uniform 1.75px stroke geometric inline SVGs styled with CSS tokens, guaranteeing identical visual rendering across Windows, macOS, and Linux.
+### 3.5 Pure Geometric SVG Iconography
+Platform-dependent emoji glyphs (`📋`, `🔍`, `🐞`, `🧪`, `🧠`, `⚙️`) have been entirely eliminated. The interface utilizes uniform 1.75px stroke geometric inline SVGs styled with CSS tokens, guaranteeing identical visual rendering across Windows, macOS, and Linux.
 
 ---
 

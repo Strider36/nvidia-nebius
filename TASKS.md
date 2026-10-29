@@ -1,6 +1,6 @@
 # Aegis AI — Task Tracker & Backlog
 
-**Version Baseline:** 0.6.0  
+**Version Baseline:** 0.7.0  
 **Last Updated:** 2026-10-30  
 **Status Key:**  
 - `[DONE]` Completed, verified with automated tests, and documented.
@@ -9,7 +9,36 @@
 
 ---
 
-## 1. Milestone 5: Obsidian/Violet Theme, Motion System & SVGs (v0.5.0 — Completed)
+## 1. Milestone 7: Unified Premium Design System Across Application (v0.7.0 — Completed)
+
+| Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
+|---|---|:---:|:---:|---|---|
+| **TASK-701** | Cross-application design audit & gap mapping | High | `[DONE]` | None | Documented fragmented styles, card-in-card nesting, raw `&times;` glyphs in `unified_design_audit.md`. |
+| **TASK-702** | Centralized typography & systematic spacing scale | High | `[DONE]` | TASK-701 | Implemented `--font-size-2xs` (0.68rem) through `--font-size-2xl` (1.60rem) and `--space-3xs` to `--space-2xl` in `styles.css`. |
+| **TASK-703** | Standardized shared component foundation | High | `[DONE]` | TASK-702 | Built reusable `.btn-*`, `.status-pill` with glow, `.data-table`, `.audit-table`, `.empty-state`, `.panel-card`. |
+| **TASK-704** | Standardize modal dialog subsystem across all 6 views | High | `[DONE]` | TASK-703 | Uniform `.modal-title-group`, SVG title icons, subtitle descriptions, and `.btn-close` geometric SVG buttons. |
+| **TASK-705** | Eliminate card-in-card nesting & de-clutter forms | Medium | `[DONE]` | TASK-703 | Flattened Add Memory form into elevated secondary surface with crisp `#292B32` hairline boundary. |
+| **TASK-706** | Dedicated Settings & Provider Diagnostics modal (`#modalSettings`) | High | `[DONE]` | TASK-704 | Rendered live provider verification, loopback privacy boundary, database sandbox, and interactive diagnostics trigger. |
+| **TASK-707** | Modernize dynamic table & card renderers | Medium | `[DONE]` | TASK-703 | Updated `renderModalProjects`, `loadTasksForProject`, `loadMemories`, `loadSkillsCatalog`, `loadWorkspaceBrowser`, `loadAuditTrail`, `loadModalApprovals`. |
+| **TASK-708** | Unified design system & settings regression test suite | High | `[DONE]` | All v0.7.0 | Added `test_frontend_unified_design_system_and_settings()` in `tests/test_frontend.py` (67 tests passing). |
+
+---
+
+## 2. Milestone 6: Native Token Streaming & Advanced Tooling (v0.6.0 — Completed)
+
+| Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
+|---|---|:---:|:---:|---|---|
+| **TASK-601** | Backend SSE streaming endpoint | High | `[DONE]` | None | `POST /api/chat/stream` delivering `text/event-stream` tokens from active provider with anti-buffering headers. |
+| **TASK-602** | Ollama native token generator | High | `[DONE]` | TASK-601 | Consume Ollama HTTP streaming payload chunk-by-chunk via `stream: true` in `LLMService._generate_stream_ollama`. |
+| **TASK-603** | Cloud OpenAI native token generator | High | `[DONE]` | TASK-601 | Stream chunks from Nebius/OpenRouter using `stream=True` in `LLMService._generate_stream_cloud`. |
+| **TASK-604** | Client incremental token renderer | High | `[DONE]` | TASK-601 | Append incoming tokens smoothly to active assistant turn with authentic blinking cursor (`.streaming-cursor`). |
+| **TASK-605** | Smart viewport auto-scroll lock | Medium | `[DONE]` | TASK-604 | Automatically scroll if user is within 160px of bottom; freeze position if user scrolls up. |
+| **TASK-606** | Server-side stream cancellation handler | High | `[DONE]` | TASK-601 | Handle `GeneratorExit` on client abort, persist partial response to SQLite with `*(Generation stopped by user)*`. |
+| **TASK-607** | Streaming regression test suite | High | `[DONE]` | All v0.6.0 | Added 9 new tests across `test_chat.py`, `test_llm.py`, `test_provider.py`, `test_frontend.py` (66 tests total). |
+
+---
+
+## 3. Milestone 5: Obsidian/Violet Theme, Motion System & SVGs (v0.5.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -24,7 +53,7 @@
 
 ---
 
-## 2. Milestone 4: Premium Response Experience & Complete Documentation (v0.4.0 — Completed)
+## 4. Milestone 4: Premium Response Experience & Complete Documentation (v0.4.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -40,7 +69,7 @@
 
 ---
 
-## 3. Milestone 3: Interface Layout & Conversation Architecture (v0.3.0 — Completed)
+## 5. Milestone 3: Interface Layout & Conversation Architecture (v0.3.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -54,7 +83,7 @@
 
 ---
 
-## 4. Milestone 2: Dual-Provider Inference & Anti-Fallback Invariant (v0.2.0 — Completed)
+## 6. Milestone 2: Dual-Provider Inference & Anti-Fallback Invariant (v0.2.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -67,7 +96,7 @@
 
 ---
 
-## 5. Milestone 1: Core Foundation & Safe Sandbox (v0.1.0 — Completed)
+## 7. Milestone 1: Core Foundation & Safe Sandbox (v0.1.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -79,25 +108,11 @@
 
 ---
 
-## 6. Milestone 6: Native Token Streaming & Advanced Tooling (v0.6.0 — Completed)
+## 8. Milestone 8: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.8.0 — Planned)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
-| **TASK-601** | Backend SSE streaming endpoint | High | `[DONE]` | None | `POST /api/chat/stream` delivering `text/event-stream` tokens from active provider with anti-buffering headers. |
-| **TASK-602** | Ollama native token generator | High | `[DONE]` | TASK-601 | Consume Ollama HTTP streaming payload chunk-by-chunk via `stream: true` in `LLMService._generate_stream_ollama`. |
-| **TASK-603** | Cloud OpenAI native token generator | High | `[DONE]` | TASK-601 | Stream chunks from Nebius/OpenRouter using `stream=True` in `LLMService._generate_stream_cloud`. |
-| **TASK-604** | Client incremental token renderer | High | `[DONE]` | TASK-601 | Append incoming tokens smoothly to active assistant turn with authentic blinking cursor (`.streaming-cursor`). |
-| **TASK-605** | Smart viewport auto-scroll lock | Medium | `[DONE]` | TASK-604 | Automatically scroll if user is within 160px of bottom; freeze position if user scrolls up. |
-| **TASK-606** | Server-side stream cancellation handler | High | `[DONE]` | TASK-601 | Handle `GeneratorExit` on client abort, persist partial response to SQLite with `*(Generation stopped by user)*`. |
-| **TASK-607** | Streaming regression test suite | High | `[DONE]` | All v0.6.0 | Added 9 new tests across `test_chat.py`, `test_llm.py`, `test_provider.py`, `test_frontend.py` (66 tests total). |
-
----
-
-## 7. Milestone 7: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.7.0 — Planned)
-
-| Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
-|---|---|:---:|:---:|---|---|
-| **TASK-701** | Tree-sitter WebAssembly grammar integration | Medium | `[PLANNED]` | None | AST-based token coloring for deeper semantic highlighting. |
-| **TASK-702** | Multi-file workspace diff staging viewer | High | `[PLANNED]` | None | Multi-tab diff viewer in workspace modal for complex refactorings. |
-| **TASK-703** | Dense vector search via local embeddings | High | `[PLANNED]` | None | Embeddings stored in SQLite-vec alongside keyword matching. |
+| **TASK-801** | Tree-sitter WebAssembly grammar integration | Medium | `[PLANNED]` | None | AST-based token coloring for deeper semantic highlighting. |
+| **TASK-802** | Multi-file workspace diff staging viewer | High | `[PLANNED]` | None | Multi-tab diff viewer in workspace modal for complex refactorings. |
+| **TASK-803** | Dense vector search via local embeddings | High | `[PLANNED]` | None | Embeddings stored in SQLite-vec alongside keyword matching. |
 

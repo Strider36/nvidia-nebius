@@ -1,6 +1,6 @@
 # Aegis AI — Product Requirements Document (PRD)
 
-**Document Version:** 0.6.0  
+**Document Version:** 0.7.0  
 **Status:** Approved / Active Baseline  
 **Date:** 2026-10-30  
 **System Name:** Aegis AI Operator  
@@ -10,18 +10,13 @@
 ## 1. Product Vision & Target Users
 
 ### 1.1 Vision
-Aegis AI is a private, security-first personal AI assistant and autonomous coding operator designed for software engineers, security researchers, and systems developers. It combines the distraction-free conversational experience of modern conversational AI with a distinctive **Obsidian, Graphite, Platinum, and Electric Violet** design identity, absolute data sovereignty, persistent contextual memory, and a sandboxed human-in-the-loop execution engine.
-
-### 1.2 Target Users
-- **Privacy-Conscious Developers**: Engineers working on proprietary codebases or sensitive intellectual property who require zero data leakage to cloud servers.
-- **Full-Stack & Systems Engineers**: Developers requiring an assistant capable of reviewing code, planning multi-phase architectures, generating unit tests, and proposing concrete file patches without risk of unauthorized execution.
-- **AI Operators**: Users who switch between local GPU acceleration (via Ollama and NVIDIA Nemotron 3.5 Bolt) and high-throughput cloud models (Nebius Token Factory / OpenRouter) based on connectivity, hardware availability, and workload complexity.
+Aegis AI is a private, security-first personal AI assistant and autonomous coding operator designed for software engineers, security researchers, and systems developers. It combines the distraction-free conversational experience of modern conversational AI with a unified **Obsidian, Graphite, Platinum, and Electric Violet** design system across all 7 application views (Main Chat, Skills, Memory, Approvals, Workspace, Audit, Settings), absolute data sovereignty, persistent contextual memory, and a sandboxed human-in-the-loop execution engine.
 
 ---
 
 ## 2. Problem Statement
 
-1. **Generic AI-Dashboard Aesthetic**: Many developer tools rely on generic card-heavy layouts, low-contrast palettes, and platform-dependent emojis that degrade perceived tool quality.
+1. **Fragmented Application Views**: Disconnected modal dialogs and inconsistent styling across peripheral tools (Skills, Memory, Approvals, Workspace, Audit, Settings) erode developer focus and perceived software quality.
 2. **Cloud Data Leakage Risk**: Traditional cloud AI assistants transmit raw proprietary code, environment secrets, and intellectual property across third-party networks, violating strict corporate governance.
 3. **Uncontrolled Agent Execution**: Fully autonomous agents that write directly to the host filesystem or execute arbitrary shell commands pose severe risks of data loss or remote code execution.
 4. **Context Amnesia**: Standard LLM chats lose context between sessions, requiring developers to repeatedly restate environment details, architectural constraints, and personal workflow preferences.
@@ -31,7 +26,7 @@ Aegis AI is a private, security-first personal AI assistant and autonomous codin
 ## 3. High-Level System Architecture
 
 Aegis AI operates as a self-contained local web application:
-- **Frontend**: Obsidian-dark single-page application served directly from FastAPI, featuring a centered 48rem reading column, collapsible history sidebar, zero-dependency tokenizing syntax highlighter, clipboard management, an `AbortController` cancellation engine, and a cohesive physics-based motion system.
+- **Frontend**: Obsidian-dark single-page application served directly from FastAPI, featuring a centered 48rem reading column, collapsible history sidebar, zero-dependency tokenizing syntax highlighter, clipboard management, an `AbortController` cancellation engine, a cohesive physics-based motion system, and unified components reused across all 7 views.
 - **Backend Service**: Asynchronous Python FastAPI application exposing REST APIs for provider switching, health probes, conversation management, approval tracking, workspace interaction, and audit logging.
 - **Inference Layer**: Dual-provider architecture supporting:
   - **Local**: Ollama HTTP API (`http://127.0.0.1:11434`) running NVIDIA Nemotron 3.5 Bolt E4B.
@@ -41,13 +36,13 @@ Aegis AI operates as a self-contained local web application:
 
 ---
 
-## 4. Distinctive Design System & Motion Specification (v0.5.0)
+## 4. Unified Design System & Component Architecture (v0.7.0)
 
-### 4.1 Color System & Tokens
+### 4.1 Color System & Surface Tokens
 Centralized in `frontend/styles.css` `:root`:
 - **Main Canvas (`--bg-primary`)**: `#0B0C0F` (Obsidian deep black)
 - **Sidebar (`--bg-sidebar`)**: `#101116` (Graphite dark panel)
-- **Secondary Surfaces (`--bg-secondary`)**: `#15171D` (Composer, cards, nav items)
+- **Secondary Surfaces (`--bg-secondary`)**: `#15171D` (Composer, cards, nav items, table headers)
 - **Elevated Surfaces (`--bg-elevated`)**: `#1B1D25` (Modals, popovers, active pills)
 - **Subtle Borders (`--border-subtle`)**: `#292B32` (Hairline boundary)
 - **Active Borders (`--border-active`)**: `#3D414D` (Interactive focus border)
@@ -58,22 +53,22 @@ Centralized in `frontend/styles.css` `:root`:
 - **Accent Hover (`--accent-hover`)**: `#B9A5FF` (Bright electric violet)
 - **Accent Subtle (`--accent-subtle`)**: `rgba(167, 139, 250, 0.12)`
 - **Accent Glow (`--accent-glow`)**: `rgba(167, 139, 250, 0.28)`
-- **Success (`--color-success`)**: `#62C9A0` (Sage / Mint)
+- **Success (`--color-success`)**: `#62C9A0` (Sage Mint)
 - **Warning (`--color-warning`)**: `#E7B96A` (Warm Amber)
 - **Error (`--color-error`)**: `#F07878` (Coral Rose)
 
-### 4.2 Motion System Specification
-- **Timing Tokens**:
-  - `--ease-out`: `cubic-bezier(0.16, 1, 0.3, 1)`
-  - `--ease-in-out`: `cubic-bezier(0.4, 0, 0.2, 1)`
-  - `--duration-fast`: `150ms` (hover, active press, focus rings)
-  - `--duration-normal`: `220ms` (toasts, cards, panels)
-  - `--duration-slow`: `360ms` (welcome hero, modal entrances)
-- **Interaction Rules**:
-  - Buttons press down slightly on active (`transform: scale(0.98)`).
-  - Welcome hero gently rises on load (`@keyframes heroEntrance`).
-  - Suggestion chips stagger their entrance (`60ms`, `110ms`, `160ms`, `210ms`).
-  - Full support for `@media (prefers-reduced-motion: reduce)` disabling non-essential motion.
+### 4.2 Typography & Spacing Scale
+- **Scale**: `--font-size-2xs` (0.68rem) to `--font-size-2xl` (1.60rem) with proportional line heights.
+- **Spacing**: `--space-3xs` (2px) to `--space-2xl` (32px) standardizing all padding and margins.
+- **Elevations**: `--shadow-sm`, `--shadow-md`, `--shadow-lg`, `--shadow-popover`.
+
+### 4.3 Shared Components Across All 7 Views
+- **Buttons**: `.btn-primary` (Electric violet gradient), `.btn-secondary`, `.btn-outline`, `.btn-ghost`, `.btn-danger`, `.btn-close` (accessible 28x28 geometric SVG button).
+- **Cards**: `.panel-card`, `.list-item-card`, `.memory-card`, `.skill-catalog-card`, `.approval-item-card`. Card-in-card nesting is strictly forbidden.
+- **Status Indicators**: `.status-pill` with pulsing state dot (`.ready`, `.pending`, `.warning`, `.rejected`).
+- **Data Tables**: `.data-table` / `.audit-table` with sticky header, monospace timestamps (`.mono-time`), and alternating row contrast.
+- **Empty States**: `.empty-state` with centered geometric SVG icon, headline, and call to action.
+- **Settings Inspector**: `#modalSettings` dedicated dialog for runtime provider, model IDs, network loopback binding (`127.0.0.1:8000`), SQLite engine, and connectivity diagnostics.
 
 ---
 
@@ -138,27 +133,23 @@ Centralized in `frontend/styles.css` `:root`:
 
 ## 8. Current Release Scope & Roadmap
 
-### In Scope (v0.6.0 — Delivered)
-- **Native Server-Sent Events (SSE) Token Streaming**:
+### In Scope (v0.7.0 — Delivered)
+- **Unified Design System Across All 7 Views**:
+  - Main Chat, Skills, Memory, Approvals, Workspace, Audit, and Settings share 100% of tokens and interaction patterns.
+  - Mathematical typography scale (`--font-size-*`) and spacing scale (`--space-*`).
+  - Pure geometric SVG close icon buttons (`aria-label="Close modal"`), replacing all legacy `&times;` entities.
+  - Dedicated Settings & Provider Diagnostics dialog (`#modalSettings`) with real-time connectivity diagnostics (`#btnRunDiagnostics`).
+  - Standardized `.status-pill`, `.data-table`, `.empty-state`, and flattened non-nested card structures.
+- **Native Server-Sent Events (SSE) Token Streaming (v0.6.0)**:
   - `POST /api/chat/stream` delivering real-time chunked tokens.
   - Native streaming integration with local Ollama HTTP API (`stream: true`) and cloud OpenAI SDK (`stream=True`).
   - Zero silent fallback: strict provider isolation enforced on streaming failures.
-  - Client-side incremental token renderer in `app.js` with `ReadableStream` reader and `TextDecoder`.
-  - Realistic blinking streaming cursor (`.streaming-cursor`) with smooth completion transition to formatted Markdown.
-  - Viewport auto-scroll lock: auto-scrolls when user is near the bottom (<=160px), preserves position when scrolled up.
-  - Active stream cancellation: `#btnStop` and `Escape` key immediately abort stream and halt backend generator.
-  - Automatic fallback: gracefully degrades to `/api/chat` if streaming endpoint is unavailable.
-- Distinctive Obsidian, Graphite, Platinum, and Electric Violet design system.
-- Cohesive physics-based motion system (`--ease-out`, `--duration-fast/normal/slow`).
-- Clean bespoke geometric SVGs replacing all decorative emoji glyphs.
-- Zero-dependency syntax highlighter for 12+ programming languages.
-- Safe Markdown sanitizer blocking XSS and invalid URLs.
-- Message actions: copy response, copy code, retry prompt, stop generation.
-- Responsive table overflow wrappers and nested list hierarchies.
-- 66 automated tests (55 Python + 11 JavaScript) with 100% pass rate.
-- Complete synchronized documentation suite.
+  - Blinking streaming cursor (`.streaming-cursor`) with smooth completion transition to formatted Markdown.
+  - Viewport auto-scroll lock: auto-scrolls when user is near bottom (<=160px), preserves position when scrolled up.
+- 67 automated tests (56 Python + 11 JavaScript) with 100% pass rate.
+- Complete synchronized documentation suite across all 7 core markdown files.
 
-### Future Roadmap (v0.7.0+)
+### Future Roadmap (v0.8.0+)
 - **Tree-sitter Syntax Highlighting**: Optional WebAssembly-based AST highlighting for deeper semantic colorization.
 - **Multi-File Workspace Diffs**: Interactive multi-tab diff viewer for large refactorings touching dozens of files.
 - **Offline Embeddings Vector Search**: Local SQLite-vec integration for dense retrieval in place of keyword-based memory matching.

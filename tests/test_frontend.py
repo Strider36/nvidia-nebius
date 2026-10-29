@@ -139,6 +139,51 @@ def test_frontend_streaming_assets():
     assert "abortCurrentRequest" in js_res.text
 
 
+def test_frontend_unified_design_system_and_settings():
+    """Verify v0.7.0 unified design system tokens, shared components, SVG close buttons, and Settings view."""
+    html_res = client.get("/")
+    assert html_res.status_code == 200
+    # Settings modal and triggers
+    assert 'id="modalSettings"' in html_res.text
+    assert 'id="btnOpenSettingsModal"' in html_res.text
+    assert 'id="btnTopbarSettings"' in html_res.text
+    assert 'id="btnRunDiagnostics"' in html_res.text
+    # Accessible geometric SVG close buttons in all modal headers (no raw &times;)
+    assert 'class="btn-close" data-close-modal title="Close modal" aria-label="Close modal">' in html_res.text
+    assert "&times;</button>" not in html_res.text  # Confirm all raw &times; close entities are eliminated
+
+    css_res = client.get("/styles.css")
+    assert css_res.status_code == 200
+    # Typography scale
+    assert "--font-size-2xs" in css_res.text
+    assert "--font-size-xs" in css_res.text
+    assert "--font-size-sm" in css_res.text
+    assert "--font-size-base" in css_res.text
+    assert "--font-size-md" in css_res.text
+    assert "--font-size-lg" in css_res.text
+    # Spacing scale
+    assert "--space-3xs" in css_res.text
+    assert "--space-xs" in css_res.text
+    assert "--space-sm" in css_res.text
+    assert "--space-md" in css_res.text
+    assert "--space-xl" in css_res.text
+    # Shared components
+    assert ".status-pill" in css_res.text
+    assert ".status-pill-dot" in css_res.text
+    assert ".data-table" in css_res.text
+    assert ".mono-time" in css_res.text
+    assert ".approval-item-card" in css_res.text
+    assert ".settings-card" in css_res.text
+    assert ".empty-state-icon" in css_res.text
+
+    js_res = client.get("/app.js")
+    assert js_res.status_code == 200
+    assert "loadSettingsModal" in js_res.text
+    assert "btnOpenSettingsModal" in js_res.text
+    assert "btnRunDiagnostics" in js_res.text
+
+
+
 
 
 

@@ -57,7 +57,12 @@
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
         <input type="text" id="conversationSearchInput" class="search-input" placeholder="Search conversations...">
-        <button class="search-clear-btn" id="btnClearSearch" title="Clear search" style="display:none;">&times;</button>
+        <button class="search-clear-btn" id="btnClearSearch" title="Clear search" aria-label="Clear search" style="display:none;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
       <!-- Project Filter -->
@@ -133,6 +138,13 @@
           <span class="model-label">Model:</span>
           <span class="model-name" id="sidebarModelId">Nemotron-70B</span>
         </div>
+        <button type="button" class="btn btn-xs btn-outline btn-sidebar-settings" id="btnOpenSettingsModal" title="Settings & Provider Diagnostics" style="width:100%; margin-top:8px; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Settings & Diagnostics</span>
+        </button>
       </div>
     </aside>
 
@@ -191,6 +203,15 @@
           <button class="btn btn-outline btn-sm" id="btnRefreshStatus" title="Check Health & Connection">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
             <span class="topbar-btn-text">Status</span>
+          </button>
+
+          <!-- Settings Modal Trigger -->
+          <button class="btn btn-outline btn-sm" id="btnTopbarSettings" title="Settings & Provider Diagnostics">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span class="topbar-btn-text">Settings</span>
           </button>
         </div>
       </header>
@@ -291,7 +312,12 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
             <span>Action Awaiting Human Approval</span>
           </div>
-          <button class="btn-close" id="btnCloseApprovalPanel" title="Dismiss panel">&times;</button>
+          <button class="btn-close" id="btnCloseApprovalPanel" title="Dismiss panel" aria-label="Dismiss panel">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         <div class="panel-body" id="pendingApprovalBody">
           <!-- Dynamically populated -->
@@ -348,8 +374,19 @@
   <div class="modal" id="modalProjects" role="dialog" aria-modal="true">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3>Project & Task Backlog</h3>
-        <button class="btn-close" data-close-modal title="Close modal">&times;</button>
+        <div class="modal-title-group">
+          <h3 class="modal-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            <span>Project & Task Backlog</span>
+          </h3>
+          <span class="modal-subtitle">Organize development milestones and manage atomic execution tasks</span>
+        </div>
+        <button class="btn-close" data-close-modal title="Close modal" aria-label="Close modal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
       <div class="modal-body">
         <div class="modal-split">
@@ -395,8 +432,19 @@
   <div class="modal" id="modalMemory" role="dialog" aria-modal="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
-        <h3>Persistent Memory Vault</h3>
-        <button class="btn-close" data-close-modal title="Close modal">&times;</button>
+        <div class="modal-title-group">
+          <h3 class="modal-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+            <span>Persistent Memory Vault</span>
+          </h3>
+          <span class="modal-subtitle">Local SQLite storage for persistent developer preferences and architecture directives</span>
+        </div>
+        <button class="btn-close" data-close-modal title="Close modal" aria-label="Close modal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
       <div class="modal-body">
         <div class="memory-filter-bar">
@@ -411,8 +459,8 @@
           <button class="btn btn-xs btn-primary" id="btnShowAddMemory">+ New Memory</button>
         </div>
 
-        <div class="form-group card mt-2" id="addMemoryForm" style="display:none;">
-          <h4>Add Persistent Memory</h4>
+        <div class="form-group mt-2" id="addMemoryForm" style="display:none; background:var(--bg-secondary); padding:14px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+          <h4 style="font-size:0.86rem; color:var(--text-primary); margin-bottom:8px;">Add Persistent Memory Directive</h4>
           <select id="newMemoryCategory" class="form-select mt-1">
             <option value="preference">Preference (Personal coding/workflow preferences)</option>
             <option value="project_context">Project Context (Architecture decisions, domains)</option>
@@ -438,8 +486,19 @@
   <div class="modal" id="modalSkills" role="dialog" aria-modal="true">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3>Reusable Skills</h3>
-        <button class="btn-close" data-close-modal title="Close modal">&times;</button>
+        <div class="modal-title-group">
+          <h3 class="modal-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>Reusable Skills</span>
+          </h3>
+          <span class="modal-subtitle">Specialized reasoning workflows, permitted toolchains, and prompt directives</span>
+        </div>
+        <button class="btn-close" data-close-modal title="Close modal" aria-label="Close modal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
       <div class="modal-body">
         <div class="skills-catalog-grid" id="skillsCatalogGrid"></div>
@@ -451,8 +510,19 @@
   <div class="modal" id="modalApprovals" role="dialog" aria-modal="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
-        <h3>Human Approval Center</h3>
-        <button class="btn-close" data-close-modal title="Close modal">&times;</button>
+        <div class="modal-title-group">
+          <h3 class="modal-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>Human Approval Center</span>
+          </h3>
+          <span class="modal-subtitle">Strict human-in-the-loop review for file modifications, patches, and command execution</span>
+        </div>
+        <button class="btn-close" data-close-modal title="Close modal" aria-label="Close modal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
       <div class="modal-body">
         <div class="approvals-tabs">
@@ -470,8 +540,19 @@
   <div class="modal" id="modalWorkspace" role="dialog" aria-modal="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
-        <h3>Safe Workspace Explorer</h3>
-        <button class="btn-close" data-close-modal title="Close modal">&times;</button>
+        <div class="modal-title-group">
+          <h3 class="modal-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <span>Safe Workspace Explorer</span>
+          </h3>
+          <span class="modal-subtitle">Inspect permitted sandbox directory, preview code, and trigger allowlisted tests</span>
+        </div>
+        <button class="btn-close" data-close-modal title="Close modal" aria-label="Close modal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
       <div class="modal-body">
         <div class="workspace-header-info">
@@ -498,8 +579,19 @@
   <div class="modal" id="modalAudit" role="dialog" aria-modal="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
-        <h3>Security Audit Trail</h3>
-        <button class="btn-close" data-close-modal title="Close modal">&times;</button>
+        <div class="modal-title-group">
+          <h3 class="modal-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            <span>Security Audit Trail</span>
+          </h3>
+          <span class="modal-subtitle">Tamper-evident logs of all operations, human decisions, and execution outcomes</span>
+        </div>
+        <button class="btn-close" data-close-modal title="Close modal" aria-label="Close modal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
       <div class="modal-body">
         <div class="audit-table-wrapper">
@@ -516,6 +608,125 @@
             <tbody id="auditTableBody"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Settings & Provider Controls -->
+  <div class="modal" id="modalSettings" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Settings & Provider Diagnostics</span>
+          </h3>
+          <span class="modal-subtitle">Inspect active runtime provider, model capabilities, loopback bindings, and security safeguards</span>
+        </div>
+        <button class="btn-close" data-close-modal title="Close modal" aria-label="Close modal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <div class="settings-grid">
+            <!-- Active Provider Card -->
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <span>Active Inference Engine</span>
+                <span class="status-pill ready" id="settingsProviderPill">
+                  <span class="status-pill-dot"></span>
+                  <span id="settingsProviderText">Local Ollama</span>
+                </span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Configured Provider:</span>
+                <span class="settings-kv-val" id="settingsActiveProvider">ollama</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Local Model ID:</span>
+                <span class="settings-kv-val" id="settingsLocalModel">nemotron-3.5-bolt:e4b</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Cloud Model ID:</span>
+                <span class="settings-kv-val" id="settingsCloudModel">nvidia/nemotron-3-super-70b-instruct</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Failover Policy:</span>
+                <span class="settings-kv-val" style="color:var(--color-warning);">Strict Anti-Fallback (No Silent Switching)</span>
+              </div>
+            </div>
+
+            <!-- Endpoints & Connectivity Card -->
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <span>Network & Privacy Boundaries</span>
+                <span class="status-pill ready">
+                  <span class="status-pill-dot"></span>
+                  <span>Loopback Only</span>
+                </span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Local Host Interface:</span>
+                <span class="settings-kv-val">127.0.0.1:8000</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Ollama Host:</span>
+                <span class="settings-kv-val" id="settingsOllamaUrl">http://127.0.0.1:11434</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Cloud Gateway:</span>
+                <span class="settings-kv-val">Nebius Token Factory / OpenRouter</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Streaming Transport:</span>
+                <span class="settings-kv-val" style="color:var(--color-success);">Native Server-Sent Events (SSE)</span>
+              </div>
+            </div>
+
+            <!-- Storage & Sandbox Card -->
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <span>Data Persistence & Sandbox</span>
+                <span class="status-pill ready">
+                  <span class="status-pill-dot"></span>
+                  <span>Protected</span>
+                </span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Database Engine:</span>
+                <span class="settings-kv-val">SQLite (aegis.db)</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Authorized Workspace:</span>
+                <span class="settings-kv-val" id="settingsWorkspacePath">./workspace</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Directory Traversal Guard:</span>
+                <span class="settings-kv-val" style="color:var(--color-success);">Enforced (is_relative_to)</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Human Approval Gate:</span>
+                <span class="settings-kv-val" style="color:var(--accent-primary);">100% Mandatory for Modifications</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline" id="btnRunDiagnostics">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px; margin-right:4px;">
+            <path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          <span>Run Connectivity Diagnostics</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-secondary" data-close-modal>Close</button>
       </div>
     </div>
   </div>

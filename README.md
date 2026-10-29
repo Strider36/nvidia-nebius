@@ -1,25 +1,27 @@
 # Aegis AI — Private Personal AI Operator
 
-[![Version](https://img.shields.io/badge/version-0.6.0-A78BFA.svg)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.7.0-A78BFA.svg)](pyproject.toml)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-66%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-67%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
-[![Theme](https://img.shields.io/badge/design-Obsidian%20%26%20Electric%20Violet-101116.svg)](frontend/styles.css)
+[![Theme](https://img.shields.io/badge/design-Unified%20Obsidian%20%26%20Electric%20Violet-101116.svg)](frontend/styles.css)
 
 **Aegis AI** is a functional, privacy-first personal AI assistant and autonomous coding operator featuring **Dual-Provider Inference**:
 1. **Local Inference**: Powered by **NVIDIA Nemotron 3.5 Bolt E4B** running locally on your hardware via **Ollama** (`http://127.0.0.1:11434`).
 2. **Cloud Inference**: Powered by **NVIDIA Nemotron** via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`).
 
-It combines a distinctive **Obsidian, Graphite, Platinum, and Electric Violet design identity** with **native SSE token streaming**, a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
+It combines a **Unified Obsidian & Electric Violet Design System** across all 7 views with **native SSE token streaming**, a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
 
 ---
 
 ## Key Capabilities
 
+- **Unified Premium Design System (Across All 7 Views)**: A single cohesive design language applied uniformly to **Main Chat, Skills, Memory, Approvals, Workspace, Audit, and Settings**. Features mathematical typography tokens (`--font-size-2xs` to `--font-size-2xl`), standardized spacing scales (`--space-3xs` to `--space-2xl`), hairline borders (`#292B32`), accessible 28x28px geometric SVG close buttons (`aria-label="Close modal"`), and clean, flat surfaces eliminating gratuitous card-in-card nesting.
+- **Dedicated Settings & Provider Diagnostics View**: Comprehensive `#modalSettings` dialog inspecting configured provider, local vs cloud models, loopback interfaces (`127.0.0.1:8000`), SQLite engine status, sandbox boundaries, and one-click connectivity diagnostics (`#btnRunDiagnostics`).
 - **Native Server-Sent Events (SSE) Token Streaming**: Real-time token streaming from local Ollama (`stream: true`) and cloud models (`stream=True`) through `POST /api/chat/stream`. Features client-side chunk decoding via `ReadableStream`, a realistic blinking streaming cursor (`.streaming-cursor`), intelligent auto-scroll locking, active stream cancellation via `#btnStop` and `Escape`, and automatic fallback protection.
-- **Obsidian & Electric Violet Design System**: A bespoke software developer identity built on Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`), Platinum text (`#E6E4EC`), and Electric Violet accents (`#A78BFA`). Features crisp hairline borders (`#292B32`) and high-contrast WCAG-compliant typography without generic card clutter.
+- **Obsidian & Electric Violet Design Identity**: A bespoke software developer identity built on Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`), Platinum text (`#E6E4EC`), and Electric Violet accents (`#A78BFA`). Features high-contrast WCAG-compliant typography and refined status pills (`.status-pill`).
 - **Physics-Based Motion System**: Fluid, restrained interaction system governed by centralized physics tokens (`--ease-out`, `--duration-fast/normal/slow`). Includes smooth fade-and-rise hero entrance, staggered suggestion chip animations (`60ms`, `110ms`, `160ms`, `210ms`), micro-interaction press scaling (`scale(0.98)`), active navigation indicators, and full `@media (prefers-reduced-motion: reduce)` support.
-- **Pure Geometric SVG Iconography**: Zero platform-dependent emojis. Every interface action, suggestion chip, memory badge, and approval tag uses crisp, bespoke inline SVGs with uniform stroke geometry.
+- **Pure Geometric SVG Iconography**: Zero platform-dependent emojis. Every interface action, suggestion chip, memory badge, file list item, and approval tag uses crisp, bespoke inline SVGs with uniform stroke geometry.
 - **Multi-Language Syntax Highlighting Engine**: Zero-dependency lexical tokenizer supporting **Python, JavaScript, TypeScript, Java, SQL, JSON, Bash, PowerShell, HTML/XML, CSS, YAML, and Markdown**. Monospace code canvases include detected language badges, copy code buttons, dark syntax tokens, and horizontal scrolling for long lines.
 - **Robust Markdown & Safe Sanitization**: Full support for headings, blockquotes, arbitrary nested lists, inline formatting (`**bold**`, `*italic*`, `` `code` ``), and responsive GitHub Flavored Markdown tables with horizontal overflow wrappers. Malformed HTML is escaped and URLs are sanitized strictly allowing `http(s)://` and `mailto:` while blocking `javascript:` and `data:` schemes.
 - **Assistant Message Actions & Toast Notifications**: One-click **Copy response** and individual **Copy code** buttons with visual checkmark states and animated toast alerts. Automatic fallback to legacy clipboard mechanisms (`document.execCommand`) ensures reliable copying across all browser security contexts.
@@ -29,12 +31,8 @@ It combines a distinctive **Obsidian, Graphite, Platinum, and Electric Violet de
 - **Safe Coding Workspace**: Restricted to `./workspace` (or configured `AEGIS_WORKSPACE`). Enforces path canonicalization, blocks path traversal (`../`), forbids access to `.env` or SSH keys, computes unified diffs, detects concurrent file change conflicts, and automatically creates timestamped backups in `.aegis_backups/` before applying modifications.
 - **Human Approval Lifecycle**: Consequential actions transition through `PROPOSED -> PENDING_APPROVAL -> APPROVED -> EXECUTING -> SUCCEEDED / FAILED`. The model cannot self-approve; every patch, task addition, and allowlisted test runner command requires explicit user confirmation with full diffs and risk disclosure.
 - **Allowlisted Command Execution**: Prohibits arbitrary shell access. Only explicitly allowlisted test runner commands (`pytest`, `python -m unittest`, `npm test`) can be executed with strict timeouts and isolated process spawning.
-- **Reusable Developer Skills**: Built-in system skills with explicit tool bindings:
-  1. **Project Planner**: Deconstructs goals into milestones and structured tasks.
-  2. **Code Explainer**: Inspects code structure, edge cases, and architectural tradeoffs.
-  3. **Debugger**: Diagnoses stack traces and formulates minimal, reviewable patches.
-  4. **Test Writer**: Generates comprehensive unit tests and executes test runners.
-- **Full Audit Trail**: Every sensitive operation, approval decision, and execution result is logged to SQLite with automatic secret sanitization.
+- **Reusable Developer Skills**: Built-in system skills with explicit tool bindings (Project Planner, Code Explainer, Debugger, Test Writer).
+- **Full Audit Trail**: Every sensitive operation, approval decision, and execution result is logged to SQLite with automatic secret sanitization in a high-density `.data-table` with sticky headers.
 
 ---
 

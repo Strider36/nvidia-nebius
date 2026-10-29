@@ -1,8 +1,8 @@
 # Aegis AI — Implementation Plan & Roadmap
 
-**Current Release:** v0.6.0  
+**Current Release:** v0.7.0  
 **Baseline Date:** 2026-10-30  
-**Status:** Milestones 1–6 Completed; Milestone 7 Planned  
+**Status:** Milestones 1–7 Completed; Milestone 8 Planned  
 
 ---
 
@@ -63,6 +63,19 @@ Aegis AI uses an incremental, additive engineering methodology designed to deliv
 |  - Auto-scroll lock: auto-scrolls at bottom (<=160px), preserves position on scroll   |
 |  - Real streaming cancellation (AbortController halting stream & generator)           |
 |  - 66 automated tests (55 Python + 11 JavaScript) with 100% pass rate                |
++---------------------------------------------------------------------------------------+
+                                           |
+                                           v
++---------------------------------------------------------------------------------------+
+|  MILESTONE 7 (v0.7.0) - Unified Premium Design System Across Application [COMPLETED]  |
+|  - Mathematical typography scale (--font-size-2xs through --font-size-2xl)            |
+|  - Systematic spacing scale (--space-3xs through --space-2xl) and elevation tokens    |
+|  - Shared component foundation (.btn-*, .status-pill, .data-table, .empty-state)      |
+|  - Standardized modal subsystem across Skills, Memory, Approvals, Workspace, Audit     |
+|  - Pure geometric SVG close buttons (.btn-close) eliminating raw '&times;' glyphs     |
+|  - Zero card-in-card nesting: flattened surfaces in modals and forms                  |
+|  - Dedicated Settings & Provider Diagnostics dialog (#modalSettings)                  |
+|  - 67 automated tests (56 Python + 11 JavaScript) with 100% pass rate                |
 +---------------------------------------------------------------------------------------+
 ```
 
@@ -128,9 +141,22 @@ Aegis AI uses an incremental, additive engineering methodology designed to deliv
 
 ---
 
+### Milestone 7: Unified Premium Design System Across Application (v0.7.0) — [COMPLETED]
+- [x] Centralized Design Tokens: Mathematical typography scale (`--font-size-2xs` to `--font-size-2xl`), spacing scale (`--space-3xs` to `--space-2xl`), elevation shadows.
+- [x] Shared Component Foundation: Standardized `.btn-*` styles, `.status-pill` indicators with live glowing dots, `.data-table` and `.audit-table` with sticky headers, `.empty-state` with SVG icons.
+- [x] Standardized Modal Subsystem: All 6 dialogs (Skills, Memory, Approvals, Workspace, Audit, Settings) share `.modal-title-group`, SVG title icons, subtitle descriptions, and `.btn-close` geometric SVG buttons.
+- [x] Elimination of Legacy Glyphs: Completely eliminated raw `&times;` entities across all modals, search inputs, and approval cards.
+- [x] Surface De-Cluttering: Flattened Add Memory form, eliminating nested card-in-card visual noise while preserving high contrast and clear visual hierarchy.
+- [x] Dedicated Settings & Provider Diagnostics View (`#modalSettings`): Detailed cards for Active Inference Engine, Network & Privacy Boundaries, Data Persistence & Sandbox, plus interactive diagnostics probe (`#btnRunDiagnostics`).
+- [x] Dynamic View Modernization: Updated `renderModalProjects`, `loadTasksForProject`, `loadMemories`, `loadSkillsCatalog`, `loadWorkspaceBrowser`, `loadAuditTrail`, `loadModalApprovals` to render standard `.status-pill` badges and monospace timestamps.
+- [x] Frontend Regression Suite: Added `test_frontend_unified_design_system_and_settings()` in `tests/test_frontend.py`.
+- [x] 67 automated tests (56 Python + 11 JavaScript) with 100% pass rate.
+
+---
+
 ## 3. Planned Milestones & Remaining Work
 
-### Milestone 7: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.7.0) — [PLANNED]
+### Milestone 8: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.8.0) — [PLANNED]
 - **Objective**: Enhance code AST inspection and integrate dense embedding vector search.
 - **Tasks**:
   1. *Tree-sitter WASM Highlighting*: Optional WebAssembly-based AST highlighting for deeper semantic colorization.

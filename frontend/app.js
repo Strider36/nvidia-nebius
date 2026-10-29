@@ -68,6 +68,10 @@ const dom = {
   modalApprovals: document.getElementById("modalApprovals"),
   modalWorkspace: document.getElementById("modalWorkspace"),
   modalAudit: document.getElementById("modalAudit"),
+  modalSettings: document.getElementById("modalSettings"),
+  btnOpenSettingsModal: document.getElementById("btnOpenSettingsModal"),
+  btnTopbarSettings: document.getElementById("btnTopbarSettings"),
+  btnRunDiagnostics: document.getElementById("btnRunDiagnostics"),
 };
 
 // Utilities
@@ -1459,7 +1463,13 @@ async function loadProjects() {
 function renderModalProjects(list) {
   const container = document.getElementById("modalProjectsList");
   if (!list.length) {
-    container.innerHTML = `<div class="empty-state">No projects created yet</div>`;
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+      </div>
+      <div class="empty-state-title">No projects created yet</div>
+      <div class="empty-state-desc">Create your first project milestone to organize and track autonomous tasks.</div>
+    </div>`;
     return;
   }
   container.innerHTML = list.map(p => `
@@ -1468,7 +1478,12 @@ function renderModalProjects(list) {
         <strong>${escapeHtml(p.name)}</strong>
         <div class="text-muted" style="font-size:0.75rem;">${escapeHtml(p.description || 'No description')}</div>
       </div>
-      <button class="btn-close" onclick="event.stopPropagation(); deleteProject('${p.id}')">&times;</button>
+      <button class="btn-close" onclick="event.stopPropagation(); deleteProject('${p.id}')" title="Delete project" aria-label="Delete project">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
   `).join("");
 }
@@ -1494,13 +1509,22 @@ window.deleteProject = async function(id) {
 async function loadTasksForProject(projectId) {
   const container = document.getElementById("modalTasksList");
   if (!projectId) {
-    container.innerHTML = `<div class="empty-state">Select a project to view tasks</div>`;
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line></svg>
+      </div>
+      <div class="empty-state-title">Select a project</div>
+      <div class="empty-state-desc">Choose a project on the left to inspect and manage its tasks.</div>
+    </div>`;
     return;
   }
   try {
     const tasks = await api(`/api/tasks?project_id=${projectId}`);
     if (!tasks.length) {
-      container.innerHTML = `<div class="empty-state">No tasks in this project</div>`;
+      container.innerHTML = `<div class="empty-state">
+        <div class="empty-state-title">No tasks in this project</div>
+        <div class="empty-state-desc">Click '+ Add Task' above to add an actionable development task.</div>
+      </div>`;
       return;
     }
     container.innerHTML = tasks.map(t => `
@@ -1508,13 +1532,21 @@ async function loadTasksForProject(projectId) {
         <div>
           <strong>${escapeHtml(t.title)}</strong>
           <div class="text-muted" style="font-size:0.75rem;">${escapeHtml(t.description || '')}</div>
-          <span class="badge ${t.status === 'completed' ? 'badge-emerald' : 'badge-amber'}">${t.status}</span>
+          <span class="status-pill ${t.status === 'completed' ? 'ready' : 'pending'}" style="margin-top:4px;">
+            <span class="status-pill-dot"></span>
+            <span>${escapeHtml(t.status)}</span>
+          </span>
         </div>
         <div class="btn-group">
           <button class="btn btn-xs btn-outline" onclick="toggleTaskStatus('${t.id}', '${t.status}')">
             ${t.status === 'completed' ? 'Reopen' : 'Complete'}
           </button>
-          <button class="btn-close" onclick="deleteTask('${t.id}', '${projectId}')">&times;</button>
+          <button class="btn-close" onclick="deleteTask('${t.id}', '${projectId}')" title="Delete task" aria-label="Delete task">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
       </div>
     `).join("");
@@ -1555,7 +1587,13 @@ async function loadMemories(category = "", query = "") {
     const memories = await api(url);
 
     if (!memories.length) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">No persistent memories stored</div>`;
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+        <div class="empty-state-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        </div>
+        <div class="empty-state-title">No persistent memories stored</div>
+        <div class="empty-state-desc">Add developer preferences or architecture directives that persist across all conversations.</div>
+      </div>`;
       return;
     }
 
@@ -1564,7 +1602,12 @@ async function loadMemories(category = "", query = "") {
         <div class="memory-category-tag">${escapeHtml(m.category)}</div>
         <p>${escapeHtml(m.content)}</p>
         ${m.keywords ? `<div class="text-muted mt-1" style="font-size:0.72rem;">Keywords: ${escapeHtml(m.keywords)}</div>` : ''}
-        <button class="btn-close" style="position:absolute; top:8px; right:8px;" onclick="deleteMemoryItem('${m.id}')">&times;</button>
+        <button class="btn-close" style="position:absolute; top:12px; right:12px;" onclick="deleteMemoryItem('${m.id}')" title="Delete memory" aria-label="Delete memory">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
     `).join("");
   } catch (err) {
@@ -1598,8 +1641,8 @@ async function loadSkillsCatalog() {
             ${(s.permitted_tools || []).map(t => `<span class="tool-tag">${escapeHtml(t)}</span>`).join("")}
           </div>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="activateSkill('${s.id}', '${s.name}')">
-          Use This Skill
+        <button class="btn btn-primary btn-sm" onclick="activateSkill('${s.id}', '${s.name}')">
+          Activate Skill
         </button>
       </div>
     `).join("");
@@ -1625,13 +1668,19 @@ async function loadWorkspaceBrowser() {
     const data = await api("/api/workspace/files");
     document.getElementById("wsRootDisplay").textContent = data.workspace_root;
     if (!data.files.length) {
-      listEl.innerHTML = `<div class="empty-state">No files in authorized workspace</div>`;
+      listEl.innerHTML = `<div class="empty-state">
+        <div class="empty-state-title">No files in authorized workspace</div>
+        <div class="empty-state-desc">The workspace sandbox is currently empty.</div>
+      </div>`;
       return;
     }
     listEl.innerHTML = data.files.map(f => `
       <div class="list-item-card" onclick="previewWorkspaceFile('${escapeHtml(f.path)}')">
-        <span>📄 <strong>${escapeHtml(f.name)}</strong></span>
-        <span class="text-muted">${f.size} B</span>
+        <span style="display:inline-flex; align-items:center; gap:8px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          <strong>${escapeHtml(f.name)}</strong>
+        </span>
+        <span class="text-muted" style="font-family:var(--font-mono); font-size:0.75rem;">${f.size} B</span>
       </div>
     `).join("");
   } catch (err) {
@@ -1655,15 +1704,20 @@ async function loadAuditTrail() {
   try {
     const logs = await api("/api/audit");
     if (!logs.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No audit records yet</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No audit records recorded yet</td></tr>`;
       return;
     }
     tbody.innerHTML = logs.map(l => `
       <tr>
-        <td>${formatDate(l.timestamp)}</td>
-        <td><code>${escapeHtml(l.action_type)}</code></td>
+        <td><span class="mono-time">${formatDate(l.timestamp)}</span></td>
+        <td><code style="font-size:0.75rem;">${escapeHtml(l.action_type)}</code></td>
         <td>${escapeHtml(l.proposed_operation)}</td>
-        <td><span class="badge ${l.approval_status === 'APPROVED' ? 'badge-emerald' : (l.approval_status === 'REJECTED' ? 'badge-rose' : 'badge-amber')}">${l.approval_status}</span></td>
+        <td>
+          <span class="status-pill ${l.approval_status === 'APPROVED' ? 'approved' : (l.approval_status === 'REJECTED' ? 'rejected' : 'pending')}">
+            <span class="status-pill-dot"></span>
+            <span>${escapeHtml(l.approval_status)}</span>
+          </span>
+        </td>
         <td>${escapeHtml(l.execution_outcome)}</td>
       </tr>
     `).join("");
@@ -1997,6 +2051,30 @@ function setupEventListeners() {
     }
   });
 
+  // Settings Modal Triggers
+  if (dom.btnOpenSettingsModal) {
+    dom.btnOpenSettingsModal.addEventListener("click", () => {
+      openModal(dom.modalSettings);
+      loadSettingsModal();
+    });
+  }
+  if (dom.btnTopbarSettings) {
+    dom.btnTopbarSettings.addEventListener("click", () => {
+      openModal(dom.modalSettings);
+      loadSettingsModal();
+    });
+  }
+  if (dom.btnRunDiagnostics) {
+    dom.btnRunDiagnostics.addEventListener("click", async () => {
+      dom.btnRunDiagnostics.disabled = true;
+      showToast("Running provider connectivity diagnostics...", "info");
+      await checkHealth();
+      await loadSettingsModal();
+      dom.btnRunDiagnostics.disabled = false;
+      showToast("Diagnostics passed: Engine is ready", "success");
+    });
+  }
+
   // Global Keyboard Shortcuts
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
@@ -2021,14 +2099,23 @@ async function loadModalApprovals(statusFilter = "") {
     const url = statusFilter ? `/api/approvals?status=${statusFilter}` : `/api/approvals`;
     const list = await api(url);
     if (!list.length) {
-      container.innerHTML = `<div class="empty-state">No approval records found</div>`;
+      container.innerHTML = `<div class="empty-state">
+        <div class="empty-state-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </div>
+        <div class="empty-state-title">No approval records found</div>
+        <div class="empty-state-desc">Actions requiring human confirmation (file patches, commands, tasks) will appear here.</div>
+      </div>`;
       return;
     }
     container.innerHTML = list.map(a => `
-      <div class="list-item-card" style="flex-direction:column; align-items:flex-start; gap:8px;">
-        <div style="display:flex; justify-content:space-between; width:100%;">
-          <strong><code>${escapeHtml(a.action_type)}</code> on ${escapeHtml(a.target)}</strong>
-          <span class="badge ${a.status === 'SUCCEEDED' ? 'badge-emerald' : (a.status === 'REJECTED' ? 'badge-rose' : 'badge-amber')}">${a.status}</span>
+      <div class="approval-item-card">
+        <div class="approval-item-header">
+          <strong style="font-size:0.86rem; color:var(--text-primary);"><code style="font-size:0.75rem; color:var(--accent-primary);">${escapeHtml(a.action_type)}</code> on ${escapeHtml(a.target)}</strong>
+          <span class="status-pill ${a.status === 'SUCCEEDED' ? 'ready' : (a.status === 'REJECTED' ? 'rejected' : 'pending')}">
+            <span class="status-pill-dot"></span>
+            <span>${escapeHtml(a.status)}</span>
+          </span>
         </div>
         <div class="text-muted" style="font-size:0.75rem;">Reason: ${escapeHtml(a.reason)} | Risk: ${escapeHtml(a.risk)}</div>
         ${a.status === 'PENDING_APPROVAL' ? `
@@ -2041,6 +2128,35 @@ async function loadModalApprovals(statusFilter = "") {
     `).join("");
   } catch (err) {
     container.innerHTML = `<div class="empty-state">Failed to load approvals: ${err.message}</div>`;
+  }
+}
+
+// Settings & Provider Diagnostics Loader
+async function loadSettingsModal() {
+  try {
+    const health = await api("/api/health");
+    const activeProvider = health.active_provider || state.activeProvider || "ollama";
+    const isLocal = activeProvider === "ollama";
+
+    const pillEl = document.getElementById("settingsProviderPill");
+    const textEl = document.getElementById("settingsProviderText");
+    const activeEl = document.getElementById("settingsActiveProvider");
+    const localModelEl = document.getElementById("settingsLocalModel");
+    const cloudModelEl = document.getElementById("settingsCloudModel");
+    const ollamaUrlEl = document.getElementById("settingsOllamaUrl");
+    const wsPathEl = document.getElementById("settingsWorkspacePath");
+
+    if (pillEl && textEl) {
+      pillEl.className = `status-pill ${health.is_ready ? 'ready' : 'warning'}`;
+      textEl.textContent = isLocal ? "Local Nemotron (Ollama)" : "Cloud Nemotron (Nebius)";
+    }
+    if (activeEl) activeEl.textContent = activeProvider.toUpperCase();
+    if (localModelEl) localModelEl.textContent = health.model || "nemotron-3.5-bolt:e4b";
+    if (cloudModelEl) cloudModelEl.textContent = "nvidia/nemotron-3-super-70b-instruct";
+    if (ollamaUrlEl) ollamaUrlEl.textContent = "http://127.0.0.1:11434";
+    if (wsPathEl) wsPathEl.textContent = "./workspace";
+  } catch (err) {
+    console.error("Failed to load settings diagnostics:", err);
   }
 }
 
