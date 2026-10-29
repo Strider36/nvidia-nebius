@@ -1,22 +1,32 @@
 # Aegis AI — Private Personal AI Operator
 
-**Aegis AI** is a functional, security-first personal AI assistant and autonomous coding operator featuring **Dual-Provider Inference**:
+[![Version](https://img.shields.io/badge/version-0.4.0-cyan.svg)](pyproject.toml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](pyproject.toml)
+[![Tests](https://img.shields.io/badge/tests-56%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
+[![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
+[![Theme](https://img.shields.io/badge/design-ChatGPT--inspired%20Obsidian-171717.svg)](frontend/styles.css)
+
+**Aegis AI** is a functional, privacy-first personal AI assistant and autonomous coding operator featuring **Dual-Provider Inference**:
 1. **Local Inference**: Powered by **NVIDIA Nemotron 3.5 Bolt E4B** running locally on your hardware via **Ollama** (`http://127.0.0.1:11434`).
 2. **Cloud Inference**: Powered by **NVIDIA Nemotron** via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`).
 
-It combines a polished obsidian-themed responsive web interface with runtime provider switching, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before consequential modifications or test executions are made.
+It combines a clean, **ChatGPT-inspired dark interface** (obsidian & charcoal palette with restrained cyan branding) with a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
 
 ---
 
 ## Key Capabilities
 
-- **Dual-Provider Architecture**: Seamlessly toggle between local zero-data-leakage Ollama inference (NVIDIA Nemotron 3.5 Bolt E4B) and high-throughput cloud inference directly from the UI or API at runtime without restarting the server.
-- **Strict Provider Isolation**: Zero silent fallbacks. A failure in local inference will never send your code or conversation to a cloud provider without explicit user intent.
-- **Persistent Local Memory**: Stores developer preferences, project context, instructions, and session summaries in SQLite. Keyword-indexed retrieval automatically retrieves relevant memories per prompt and displays them transparently in the UI. Sensitive data (passwords, tokens, keys) is blocked at the memory gateway.
-- **Safe Coding Workspace**: Restricted to `./workspace` (or your configured `AEGIS_WORKSPACE`). Enforces path canonicalization, blocks path traversal (`../`), forbids access to `.env` or SSH keys, computes unified diffs, detects concurrent file change conflicts, and automatically creates timestamped backups in `.aegis_backups/` before applying modifications.
-- **Human Approval Lifecycle**: Consequential actions transition through `PROPOSED -> PENDING_APPROVAL -> APPROVED -> EXECUTING -> SUCCEEDED / FAILED`. The model cannot self-approve; every patch, task addition, and allowlisted command requires explicit user confirmation with full diffs and risk disclosure.
+- **ChatGPT-Inspired Minimalist Response Experience**: Clean, focused dark chat layout with near-black main workspace (`#0d0d0d`), charcoal collapsible sidebar (`#171717`), instant conversation search, date-grouped sessions (`Today`, `Yesterday`, `Previous 7 Days`, `Older`), starter suggestion chips, auto-resizing floating composer, and full mobile off-canvas drawer responsiveness.
+- **Multi-Language Syntax Highlighting Engine**: Zero-dependency lexical tokenizer supporting **Python, JavaScript, TypeScript, Java, SQL, JSON, Bash, PowerShell, HTML/XML, CSS, YAML, and Markdown**. Monospace code canvases include detected language badges, copy code buttons, dark syntax tokens, and horizontal scrolling for long lines.
+- **Robust Markdown & Safe Sanitization**: Full support for headings, blockquotes, arbitrary nested lists, inline formatting (`**bold**`, `*italic*`, `` `code` ``), and responsive GitHub Flavored Markdown tables with horizontal overflow wrappers. Malformed HTML is escaped and URLs are sanitized strictly allowing `http(s)://` and `mailto:` while blocking `javascript:` and `data:` schemes.
+- **Assistant Message Actions & Toast Notifications**: One-click **Copy response** and individual **Copy code** buttons with visual checkmark states and animated toast alerts. Automatic fallback to legacy clipboard mechanisms (`document.execCommand`) ensures reliable copying across all browser security contexts.
+- **Real Request Cancellation (`AbortController`)**: Interactive stop button (`#btnStop`) and `Escape` key trigger true client-side cancellation, immediately halting in-flight HTTP requests and restoring composer controls without corrupting conversation history.
+- **Dual-Provider Architecture with Zero Silent Fallback**: Seamlessly toggle between local zero-data-leakage Ollama inference (NVIDIA Nemotron 3.5 Bolt E4B) and high-throughput cloud inference directly from the UI or API at runtime without restarting the server. A local failure will **never** silently route private code to the cloud.
+- **Persistent Local Memory**: Stores developer preferences, project context, instructions, and session summaries in SQLite. Keyword-indexed retrieval automatically matches relevant memories per prompt. Sensitive data (passwords, tokens, keys) is blocked at the memory gateway.
+- **Safe Coding Workspace**: Restricted to `./workspace` (or configured `AEGIS_WORKSPACE`). Enforces path canonicalization, blocks path traversal (`../`), forbids access to `.env` or SSH keys, computes unified diffs, detects concurrent file change conflicts, and automatically creates timestamped backups in `.aegis_backups/` before applying modifications.
+- **Human Approval Lifecycle**: Consequential actions transition through `PROPOSED -> PENDING_APPROVAL -> APPROVED -> EXECUTING -> SUCCEEDED / FAILED`. The model cannot self-approve; every patch, task addition, and allowlisted test runner command requires explicit user confirmation with full diffs and risk disclosure.
 - **Allowlisted Command Execution**: Prohibits arbitrary shell access. Only explicitly allowlisted test runner commands (`pytest`, `python -m unittest`, `npm test`) can be executed with strict timeouts and isolated process spawning.
-- **Reusable Skills**: Built-in system skills with explicit tool bindings:
+- **Reusable Developer Skills**: Built-in system skills with explicit tool bindings:
   1. **Project Planner**: Deconstructs goals into milestones and structured tasks.
   2. **Code Explainer**: Inspects code structure, edge cases, and architectural tradeoffs.
   3. **Debugger**: Diagnoses stack traces and formulates minimal, reviewable patches.
@@ -32,86 +42,93 @@ It combines a polished obsidian-themed responsive web interface with runtime pro
 |                                     LOCAL HOST                                    |
 |                                                                                   |
 |  +------------------------+                     +-------------------------------+  |
-|  | Modern Web UI (Dark)   | <-----------------> | FastAPI Backend (127.0.0.1)   |  |
+|  | ChatGPT-Style Web UI   | <-----------------> | FastAPI Backend (127.0.0.1)   |  |
 |  | [Local | Cloud Toggle] |                     +---------------+---------------+  |
-|  +------------------------+                                     |                  |
-|                                                                 v                  |
-|  +------------------------------------------------------------------------------+  |
-|  | Aegis Security & Orchestration Layer                                         |  |
-|  | - Request-Level Provider Snapshotting & Isolation Guard                      |  |
-|  | - Path Resolution & Traversal Guard                                          |  |
-|  | - Human Approval Life Cycle Engine                                           |  |
-|  | - Command Allowlist Verifier (pytest, unittest, npm)                         |  |
-|  | - Sensitive Token Redactor & Secret Shield                                   |  |
-|  +----------------------+--------------------+--------------------+--------------+  |
-|                         |                    |                    |                |
-|       +-----------------+                    v                    |                |
-|       |                               +-----------------+         |                |
-|       v                               | Reusable Skills |         v                |
-|  +-----------------+                  | - Planner       |    +-----------------+   |
-|  | SQLite Database |                  | - Explainer     |    | Safe Workspace  |   |
-|  | - Memories      |                  | - Debugger      |    | (./workspace)   |   |
-|  | - Projects      |                  | - Test Writer   |    | - Diffs & Files |   |
-|  | - Approvals     |                  +-----------------+    | - Auto-Backups  |   |
-|  | - Audit Trail   |                                         +-----------------+   |
-|  +-----------------+                                                               |
-+-------------|----------------------------------------------------|-----------------+
-              | HTTP (Localhost)                                   | HTTPS (Bounded)
-              v                                                    v
-+-------------------------------+                +-----------------------------------+
-|       Ollama Local API        |                |    Nebius Token Factory Cloud     |
-|  (http://127.0.0.1:11434)     |                |     OpenRouter API Gateway        |
-|  NVIDIA Nemotron 3.5 Bolt E4B |                |    NVIDIA Nemotron Inference      |
-+-------------------------------+                +-----------------------------------+
+|  | [Syntax Highlighter]   |                                     |                  |
+|  | [AbortController Stop] |                                     v                  |
+|  +------------------------+                     +-------------------------------+  |
+|                                                 | Agent & Security Layer        |  |
+|                                                 | - Per-Request Provider Snap   |  |
+|                                                 | - Anti-Fallback Invariant     |  |
+|                                                 | - Path Traversal Guard        |  |
+|                                                 | - Human Approval Life Cycle   |  |
+|                                                 | - Command Allowlist Verifier  |  |
+|                                                 | - Secret Redaction Shield     |  |
+|                                                 +-------+---------------+-------+  |
+|                                                         |               |          |
+|       +-------------------------------------------------+               |          |
+|       |                               +-----------------+               |          |
+|       v                               v                                 v          |
+|  +-----------------+          +-----------------+              +-----------------+ |
+|  | SQLite Database |          | Reusable Skills |              | Safe Workspace  | |
+|  | - Memories      |          | - Planner       |              | (./workspace)   | |
+|  | - Projects      |          | - Explainer     |              | - Unified Diffs | |
+|  | - Approvals     |          | - Debugger      |              | - Auto-Backups  | |
+|  | - Audit Trail   |          | - Test Writer   |              +-----------------+ |
+|  +-----------------+          +-----------------+                                  |
++-------------|-----------------------------------------------------------|---------+
+              | HTTP (Localhost)                                          | HTTPS (Cloud)
+              v                                                           v
++-------------------------------+                       +-----------------------------------+
+|       Ollama Local Daemon     |                       |    Nebius Token Factory Cloud     |
+|     (http://127.0.0.1:11434)  |                       |     OpenRouter API Gateway        |
+|  NVIDIA Nemotron 3.5 Bolt E4B |                       |    NVIDIA Nemotron Inference      |
++-------------------------------+                       +-----------------------------------+
 ```
 
+---
+
+## Prerequisites (Windows 11)
+
+- **Operating System**: Windows 11 (or Windows 10 build 19041+), Linux, or macOS.
+- **Python**: Python 3.11+ (Python 3.11, 3.12, 3.13, 3.14 verified).
+- **Node.js**: Node.js v18.0.0+ (verified on v24.19.0) for running the client-side test suite (zero `npm` dependencies required).
+- **Hardware (for Local Ollama)**:
+  - Recommended: NVIDIA GeForce RTX 3060+ (8 GB+ VRAM) or RTX 40-series GPU.
+  - Supported: 16 GB+ system RAM for CPU offloading.
 
 ---
 
 ## Installation & Setup
 
-### 1. Prerequisites
-- **Python**: Python 3.11+ (Python 3.11, 3.12, 3.13, 3.14 supported).
-- **OS**: Windows 11, Linux, or macOS.
-
-### 2. Clone and Setup Environment
+### 1. Clone Repository & Setup Virtual Environment
 ```bash
-git clone <repository_url> aegis-ai
+git clone https://github.com/Strider36/nvidia-nebius.git aegis-ai
 cd aegis-ai
 
-# Optional: Create virtual environment
+# Create virtual environment
 python -m venv venv
-# On Windows:
+
+# Activate on Windows:
 venv\Scripts\activate
-# On Linux/macOS:
+# Activate on Linux/macOS:
 source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
-### 3. Local Model Setup (Ollama with NVIDIA Nemotron 3.5 Bolt E4B)
-
+### 2. Local Model Setup (Ollama with NVIDIA Nemotron 3.5 Bolt E4B)
 To run local private inference:
-1. Download and install **Ollama** from [ollama.com](https://ollama.com).
+1. Download and install **Ollama for Windows** from [ollama.com](https://ollama.com).
 2. Pull the NVIDIA Nemotron 3.5 Bolt model:
    ```bash
    ollama pull nemotron-3.5-bolt:e4b
    ```
-3. Verify that the model is installed:
+3. Verify that the model is present:
    ```bash
    ollama list
    ```
-   *Expected output includes `nemotron-3.5-bolt:e4b`.*
-4. Ensure Ollama service is running (`http://127.0.0.1:11434`).
+   *Expected output lists `nemotron-3.5-bolt:e4b`.*
+4. Ensure the Ollama daemon is running (`http://127.0.0.1:11434`).
 
-### 4. Configure Environment Variables
+### 3. Configure Environment Variables
 Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and set your preferred provider settings:
+Edit `.env` to configure your preferred settings:
 ```ini
 # Inference Provider Selection ('ollama' or 'cloud')
 LLM_PROVIDER=ollama
@@ -136,6 +153,24 @@ AEGIS_DEBUG=false
 
 ---
 
+## Running the Application
+
+Start the Aegis AI server:
+```bash
+python main.py
+```
+Or directly with uvicorn:
+```bash
+uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+Open your browser and navigate to:
+```
+http://127.0.0.1:8000
+```
+
+---
+
 ## Dual-Provider Runtime Switching
 
 Aegis AI lets you switch between local Ollama inference and cloud inference **without restarting the server**:
@@ -149,174 +184,77 @@ Aegis AI lets you switch between local Ollama inference and cloud inference **wi
    - Query status: `GET /api/provider`
    - Switch provider: `POST /api/provider` with payload `{"provider": "ollama"}` or `{"provider": "cloud"}`.
 
-### Connection Diagnostics & Troubleshooting:
-- **Connection Error (`Unable to reach Ollama at http://127.0.0.1:11434`)**: Verify Ollama is running (`Get-Process *ollama*` on Windows or `ollama serve`).
-- **Model Missing Error (`Model '...' not found in Ollama`)**: Run `ollama pull nemotron-3.5-bolt:e4b` or update `OLLAMA_MODEL` in `.env`.
-- **Request Timeout**: First-time loading of 7.5B+ GGUF models into GPU VRAM can take 30-45 seconds. Increase `OLLAMA_TIMEOUT=90.0` in `.env` if your system uses CPU offloading.
-- **Strict Isolation Guarantee**: A failure in local Ollama will **never** automatically fall back to cloud inference. Aegis AI reports the error directly to preserve full privacy.
-
----
-
-## Launching the Application
-
-Start the Aegis AI server:
-```bash
-python main.py
-```
-Or with uvicorn directly:
-```bash
-uvicorn main:app --host 127.0.0.1 --port 8000
-```
-
-Open your browser and navigate to:
-```
-http://127.0.0.1:8000
-```
-
-
----
-
-## Building and Distribution
-
-Aegis AI supports multiple production-ready build targets:
-
-### 1. Build Standard Wheel & Source Package (PEP 517)
-```bash
-python scripts/build.py --package
-```
-This produces ready-to-distribute packages in `dist/`:
-- `dist/aegis_ai-0.1.0-py3-none-any.whl`
-- `dist/aegis_ai-0.1.0.tar.gz`
-
-Install globally into any environment:
-```bash
-pip install dist/aegis_ai-0.1.0-py3-none-any.whl
-# Launch from anywhere via the generated CLI command:
-aegis-ai
-```
-
-### 2. Standalone Portable Binary (PyInstaller)
-Bundle the Python interpreter, FastAPI, SQLite, frontend assets, and skill definitions into a standalone build:
-```bash
-python scripts/build.py --standalone
-```
-The output directory `dist/aegis-ai/` contains the self-contained executable.
-
-### 3. Containerized Build (Docker & Docker Compose)
-Build and run Aegis AI in an isolated container:
-```bash
-docker compose up --build -d
-```
-Access the application at `http://127.0.0.1:8000`.
-
-### 4. Build Automation Utility (`scripts/build.py`)
-Run all verification, package, and cleanup commands:
-```bash
-# Clean, run test suite, and build distribution package
-python scripts/build.py --test --package
-
-# Full end-to-end build (clean, test, wheel, standalone binary)
-python scripts/build.py --all
-```
-
----
-
-## Performance Optimizations
-
-1. **High-Performance SQLite Engine**:
-   - `PRAGMA journal_mode = WAL`: High concurrency reader-writer execution.
-   - `PRAGMA synchronous = NORMAL`: Skips redundant fsyncs while ensuring zero database corruption risk.
-   - `PRAGMA cache_size = -64000`: 64 MB in-memory page cache for lightning queries.
-   - `PRAGMA mmap_size = 268435456`: 256 MB memory-mapped I/O.
-2. **ASGI & Network Optimizations**:
-   - `GZipMiddleware`: Compresses static files and JSON responses over 1 KB, reducing transfer size by up to 70%.
-   - **Static Asset Caching**: 1-hour cache-control policy for static styles, scripts, and logos.
-   - **Security Headers Middleware**: Enforces `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1`, and `Referrer-Policy: strict-origin-when-cross-origin`.
-3. **Frontend UX Optimizations**:
-   - Keyboard ergonomics: Press `Enter` to submit, `Shift+Enter` for multiline text.
-   - Auto-expanding message textarea up to 160px.
-   - Live pulsating thinking indicator with dynamic reasoning status stages.
-   - Real-time button spinners for async operations.
-
 ---
 
 ## Running Automated Tests
 
-All tests mock external inference and require **zero API credits** to execute.
+All tests execute deterministically and require **zero API credits**.
 
-Run the complete test suite:
+### Run Full Verification (Python + Node.js — 56 Tests):
+```bash
+python -m pytest && node tests/test_markdown_renderer.js
+```
+
+### Run Python Backend Tests:
 ```bash
 python -m pytest
+```
+
+### Run Node.js Frontend Renderer Tests:
+```bash
+node tests/test_markdown_renderer.js
 ```
 
 Expected output:
 ```
 ============================= test session starts =============================
-collected 28 items
+collected 45 items
+tests\test_approvals.py ..                                               [  4%]
+tests\test_audit.py ..                                                   [  8%]
+tests\test_chat.py ......                                                [ 22%]
+tests\test_frontend.py .....                                             [ 33%]
+tests\test_health.py ..                                                  [ 37%]
+tests\test_llm.py ....                                                   [ 46%]
+tests\test_memory.py ....                                                [ 55%]
+tests\test_projects.py ..                                                [ 60%]
+tests\test_provider.py ............                                      [ 86%]
+tests\test_workspace.py ......                                           [100%]
+============================= 45 passed in 3.06s ==============================
 
-tests/test_approvals.py ..                                               [  7%]
-tests/test_audit.py ..                                                   [ 14%]
-tests/test_chat.py ....                                                  [ 28%]
-tests/test_frontend.py ..                                                [ 35%]
-tests/test_health.py ..                                                  [ 42%]
-tests/test_llm.py ....                                                   [ 57%]
-tests/test_memory.py ....                                                [ 71%]
-tests/test_projects.py ..                                                [ 78%]
-tests/test_workspace.py ......                                           [100%]
-
-============================= 28 passed in 1.62s ==============================
+--- Running Aegis AI Markdown & Syntax Highlighter Tests ---
+✓ Safe URL sanitizer tests passed
+✓ Python syntax highlighting tests passed
+✓ JavaScript/TypeScript syntax highlighting tests passed
+✓ SQL syntax highlighting tests passed
+✓ JSON syntax highlighting tests passed
+✓ Bash syntax highlighting tests passed
+✓ Markdown link rendering and XSS sanitization tests passed
+✓ Markdown headings and inline formatting tests passed
+✓ Markdown tables tests passed
+✓ Nested lists tests passed
+✓ Unclosed code block recovery tests passed
+ALL 11 JAVASCRIPT MARKDOWN & SYNTAX TESTS PASSED SUCCESFULLY!
 ```
 
 ---
 
-## Verification & Hackathon Demo Script
+## Common Errors & Troubleshooting
 
-Follow this repeatable 5-minute walkthrough to demonstrate Aegis AI:
-
-### Step 1: Health & System Status Check
-1. Open `http://127.0.0.1:8000`.
-2. Observe the top-left status pill:
-   - Green indicator: Nebius Token Factory is connected.
-   - Model name displayed in sidebar footer (`Nemotron-70B`).
-   - Server bound to `127.0.0.1`.
-
-### Step 2: Persistent Semantic Memory
-1. In the sidebar, click the **Memory** tab.
-2. Click **+ New Memory**.
-3. Select **Preference** and enter:
-   `"Always generate Python code with strict type annotations and docstrings."`
-4. Click **Save Memory**.
-5. Refresh the browser or restart the server: notice the memory remains permanently stored in SQLite.
-
-### Step 3: Project & Task Backlog
-1. Click the **Active Project** dropdown or folder icon.
-2. Click **+ Add Project**, name it `"Microservices MVP"`, and create it.
-3. Add a task: `"Implement JWT verification middleware"`.
-
-### Step 4: Reusable Skills in Action
-1. Return to the chat session.
-2. Select the **Test Writer** skill pill from the bottom bar.
-3. Send: `"Propose a new test file test_math.py with tests for a factorial function."`
-4. Notice how Aegis AI retrieves the memory: `🧠 Memories Applied: [preference] Always generate Python code with strict type annotations...`
-5. The assistant outputs the solution and presents a **Human Approval Card** with the proposed diff and risk disclosure.
-
-### Step 5: Safe Workspace & Human Approval Execution
-1. Inspect the **Approval Card**: notice the unified diff and reason.
-2. Click **✓ Approve & Apply**.
-3. Open the **Workspace** tab: verify `test_math.py` has been written to `./workspace/test_math.py`.
-4. Propose running the tests: click **Run Allowlisted Tests** and enter `pytest`.
-5. Approve the test execution in the **Approvals** tab and observe the exit status and stdout.
-
-### Step 6: Security Audit Trail
-1. Open the **Audit** tab.
-2. View the complete, chronologically ordered log of proposals, user approvals, execution statuses, and sanitized inputs.
+| Symptom | Cause | Solution |
+|---|---|---|
+| `Unable to reach Ollama at http://127.0.0.1:11434` | Ollama daemon is not running | Start Ollama from Start Menu or run `ollama serve` in a terminal. |
+| `Model 'nemotron-3.5-bolt:e4b' not found in Ollama` | The model has not been downloaded | Run `ollama pull nemotron-3.5-bolt:e4b`. |
+| Inference timeout after 60s | First-time model loading onto CPU/VRAM | Set `OLLAMA_TIMEOUT=120.0` in `.env` to accommodate slower CPU offloading. |
+| Port 8000 already in use | Another application or previous Aegis instance is running | Run on alternate port: `python main.py --port 8001` or kill existing process. |
+| Clipboard copy toast displays error | Browser permissions restricted (non-HTTPS or iframe) | Aegis automatically uses `document.execCommand('copy')` fallback; ensure the window is focused. |
+| Markdown tables broken | Text missing trailing pipe or newline | Aegis table parser formats GFM tables; ensure standard Markdown table syntax. |
 
 ---
 
-## Security Model & Known Limitations
+## Security Model & Privacy Limitations
 
-- **Single Trusted Local User**: Aegis AI MVP is designed to run locally on `127.0.0.1` for an individual developer. It does not provide multi-tenant authentication or public-facing role-based access control.
-- **Subprocess Isolation**: Commands are strictly restricted to the allowlist (`pytest`, `python -m pytest`, `python -m unittest`, `npm test`, `node --test`). Arbitrary shell execution (`sh`, `bash`, `cmd`, `powershell`) is blocked.
-- **Path Confinement**: All file read/write operations must resolve strictly within `AEGIS_WORKSPACE`. Traversal sequences (`../`) and sensitive patterns (`.env`, `*.pem`, `*.key`, `id_rsa`) are rejected with `WorkspaceSecurityError`.
-- **Zero Silent Overwrites**: Patches are rejected if the file on disk was modified after the diff was generated. Automated timestamped backups are preserved in `.aegis_backups/`.
-
+1. **Strict Data Sovereignty**: When `LLM_PROVIDER=ollama`, prompts and code are processed 100% on localhost. Aegis includes an architectural anti-fallback invariant that prevents silent rerouting to cloud endpoints.
+2. **Subprocess Whitelist**: Shell execution is strictly restricted to allowlisted test runners (`pytest`, `python -m unittest`, `npm test`). Arbitrary shell execution (`rm`, `sh`, `curl`, `powershell`) is blocked.
+3. **Workspace Boundary**: All file operations resolve strictly inside `AEGIS_WORKSPACE` (`./workspace`). Traversal attempts (`../`) and sensitive patterns (`.env`, `.git`, `*.pem`, `id_rsa`) are rejected.
+4. **Pre-Modification Rollback**: Every approved patch creates an automatic timestamped backup in `.aegis_backups/` before files are touched.
+5. **Single-User Local Trust**: Designed for an individual developer running on `127.0.0.1`. It does not include multi-tenant user authentication or external network ingress hardening.

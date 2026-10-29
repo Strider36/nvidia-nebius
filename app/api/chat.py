@@ -7,6 +7,7 @@ from app.models import (
     ChatResponse,
     ConversationCreate,
     ConversationResponse,
+    ConversationUpdate,
 )
 from app.services.agent_service import agent_service
 
@@ -37,6 +38,16 @@ def get_conversation(conversation_id: str) -> ConversationResponse:
     conv = agent_service.get_conversation(conversation_id)
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found.")
+    return conv
+
+
+@router.patch("/conversations/{conversation_id}", response_model=ConversationResponse)
+def rename_conversation(conversation_id: str, req: ConversationUpdate) -> ConversationResponse:
+    """Rename a conversation session."""
+    updated = agent_service.rename_conversation(conversation_id, req.title)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    conv = agent_service.get_conversation(conversation_id)
     return conv
 
 

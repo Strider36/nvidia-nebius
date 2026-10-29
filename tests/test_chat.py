@@ -146,3 +146,26 @@ def test_chat_unconfigured_model_handling(temp_chat_env):
         assert "⚠️ Aegis AI Operational Notice" in res.assistant_message
 
 
+def test_conversation_rename_endpoint(temp_chat_env):
+    """Verify renaming a conversation via API."""
+    from fastapi.testclient import TestClient
+    from main import app
+
+    client = TestClient(app)
+    # Create conversation
+    create_res = client.post("/api/conversations", json={"title": "Original Title"})
+    assert create_res.status_code == 201
+    conv_id = create_res.json()["id"]
+
+    # Rename conversation
+    patch_res = client.patch(f"/api/conversations/{conv_id}", json={"title": "Updated Title"})
+    assert patch_res.status_code == 200
+    assert patch_res.json()["title"] == "Updated Title"
+
+    # Verify retrieval
+    get_res = client.get(f"/api/conversations/{conv_id}")
+    assert get_res.status_code == 200
+    assert get_res.json()["title"] == "Updated Title"
+
+
+

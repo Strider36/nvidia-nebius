@@ -152,6 +152,17 @@ class AgentService:
             )
 
     @staticmethod
+    def rename_conversation(conv_id: str, title: str) -> bool:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            now = datetime.now(timezone.utc).isoformat()
+            cursor.execute(
+                "UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?",
+                (title.strip(), now, conv_id),
+            )
+            return cursor.rowcount > 0
+
+    @staticmethod
     def delete_conversation(conv_id: str) -> bool:
         with get_db_connection() as conn:
             cursor = conn.cursor()

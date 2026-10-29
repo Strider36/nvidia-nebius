@@ -1,6 +1,7 @@
 /**
  * Aegis AI — Frontend Application Logic
  * Pure Vanilla JavaScript (Zero External Dependencies)
+ * Clean, ChatGPT-inspired conversational interface with premium syntax highlighting.
  */
 
 // Application State
@@ -14,10 +15,19 @@ const state = {
   projects: [],
   skills: [],
   pendingApprovals: [],
+  allConversations: [],
+  lastUserMessage: "",
 };
+
+let currentAbortController = null;
 
 // DOM Elements
 const dom = {
+  appContainer: document.getElementById("appContainer"),
+  sidebar: document.getElementById("sidebar"),
+  sidebarBackdrop: document.getElementById("sidebarBackdrop"),
+  btnToggleSidebar: document.getElementById("btnToggleSidebar"),
+  btnMobileMenu: document.getElementById("btnMobileMenu"),
   systemStatusBadge: document.getElementById("systemStatusBadge"),
   systemStatusText: document.getElementById("systemStatusText"),
   sidebarModelId: document.getElementById("sidebarModelId"),
@@ -27,10 +37,13 @@ const dom = {
   dotProviderCloud: document.getElementById("dotProviderCloud"),
   topbarProviderTag: document.getElementById("topbarProviderTag"),
   btnNewSession: document.getElementById("btnNewSession"),
+  conversationSearchInput: document.getElementById("conversationSearchInput"),
+  btnClearSearch: document.getElementById("btnClearSearch"),
   projectSelector: document.getElementById("projectSelector"),
   btnOpenProjectsModal: document.getElementById("btnOpenProjectsModal"),
   conversationList: document.getElementById("conversationList"),
   activeSessionTitle: document.getElementById("activeSessionTitle"),
+  btnRenameActiveSession: document.getElementById("btnRenameActiveSession"),
   activeProjectBadge: document.getElementById("activeProjectBadge"),
   activeSkillBadge: document.getElementById("activeSkillBadge"),
   topPendingBanner: document.getElementById("topPendingBanner"),
@@ -45,6 +58,8 @@ const dom = {
   chatForm: document.getElementById("chatForm"),
   messageInput: document.getElementById("messageInput"),
   btnSend: document.getElementById("btnSend"),
+  btnStop: document.getElementById("btnStop"),
+  toastContainer: document.getElementById("toastContainer"),
   pendingCountBadge: document.getElementById("pendingCountBadge"),
   // Modals
   modalProjects: document.getElementById("modalProjects"),
@@ -58,27 +73,399 @@ const dom = {
 // Utilities
 function escapeHtml(str) {
   if (!str) return "";
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function formatDate(isoStr) {
   if (!isoStr) return "";
   try {
     const d = new Date(isoStr);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " " + d.toLocaleDateString();
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " · " + d.toLocaleDateString();
   } catch (e) {
     return isoStr;
   }
 }
 
-// Enhanced Markdown formatting helper with safe HTML escaping and rich widgets
+function sanitizeUrl(url) {
+  if (!url) return "#";
+  const trimmed = url.trim();
+  if (/^(https?:\/\/|mailto:|#|\/)/i.test(trimmed)) {
+    return trimmed;
+  }
+  return "#";
+}
+
+// Toast Notification
+function showToast(message, type = "success") {
+  const container = dom.toastContainer || document.getElementById("toastContainer");
+  if (!container) return;
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transition = "opacity 0.25s";
+    setTimeout(() => toast.remove(), 250);
+  }, 2200);
+}
+
+// Non-destructive Clipboard Copy with Fallback
+async function copyToClipboard(text, successMsg = "Copied to clipboard!") {
+  if (!text) return false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      showToast(successMsg, "success");
+      return true;
+    }
+  } catch (err) {
+    // Fallback to execCommand
+  }
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (ok) {
+      showToast(successMsg, "success");
+      return true;
+    }
+  } catch (e) {}
+
+  showToast("Failed to copy to clipboard", "error");
+  return false;
+}
+
+// Group conversations by date: Today, Yesterday, Previous 7 Days, Older
+function groupConversationsByDate(convs) {
+  const groups = {
+    today: [],
+    yesterday: [],
+    previous7Days: [],
+    older: [],
+  };
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfYesterday = startOfToday - 86400000;
+  const startOf7Days = startOfToday - 86400000 * 7;
+
+  convs.forEach(c => {
+    let t = 0;
+    try {
+      t = new Date(c.updated_at || c.created_at).getTime();
+    } catch (e) {
+      t = 0;
+    }
+
+    if (t >= startOfToday) {
+      groups.today.push(c);
+    } else if (t >= startOfYesterday) {
+      groups.yesterday.push(c);
+    } else if (t >= startOf7Days) {
+      groups.previous7Days.push(c);
+    } else {
+      groups.older.push(c);
+    }
+  });
+
+  return groups;
+}
+
+// ============================================================================
+// Multi-Language Syntax Highlighting Engine (Pure, Offline, Zero-Dependency)
+// ============================================================================
+function highlightSyntax(code, lang) {
+  if (!code) return "";
+  const language = (lang || "").toLowerCase().trim();
+
+  const langMap = {
+    py: "python", python: "python",
+    js: "javascript", javascript: "javascript",
+    ts: "typescript", typescript: "typescript",
+    java: "java",
+    sql: "sql",
+    json: "json",
+    bash: "bash", sh: "bash", shell: "bash", zsh: "bash",
+    ps1: "powershell", powershell: "powershell", ps: "powershell",
+    html: "html", xml: "html",
+    css: "css", scss: "css", less: "css",
+    yaml: "yaml", yml: "yaml",
+    md: "markdown", markdown: "markdown",
+  };
+
+  const targetLang = langMap[language] || "unknown";
+
+  if (targetLang === "unknown") {
+    return escapeHtml(code);
+  }
+
+  // Keywords definitions
+  const keywords = {
+    python: new Set([
+      "def", "class", "import", "from", "return", "if", "elif", "else", "while",
+      "for", "in", "try", "except", "finally", "with", "as", "lambda", "yield",
+      "async", "await", "pass", "raise", "assert", "global", "nonlocal", "self",
+      "cls", "is", "not", "and", "or"
+    ]),
+    javascript: new Set([
+      "const", "let", "var", "function", "return", "if", "else", "for", "while",
+      "do", "switch", "case", "break", "continue", "new", "this", "class",
+      "extends", "super", "import", "export", "default", "from", "try", "catch",
+      "finally", "throw", "async", "await", "typeof", "instanceof", "in", "of",
+      "yield", "void", "delete"
+    ]),
+    typescript: new Set([
+      "const", "let", "var", "function", "return", "if", "else", "for", "while",
+      "do", "switch", "case", "break", "continue", "new", "this", "class",
+      "extends", "super", "import", "export", "default", "from", "try", "catch",
+      "finally", "throw", "async", "await", "typeof", "instanceof", "in", "of",
+      "yield", "void", "delete", "interface", "type", "enum", "implements",
+      "private", "public", "protected", "readonly", "declare", "namespace", "as", "any"
+    ]),
+    java: new Set([
+      "public", "private", "protected", "class", "interface", "extends", "implements",
+      "new", "this", "super", "return", "if", "else", "for", "while", "do",
+      "switch", "case", "break", "continue", "try", "catch", "finally", "throw",
+      "throws", "static", "final", "abstract", "void", "package", "import", "instanceof"
+    ]),
+    sql: new Set([
+      "select", "from", "where", "insert", "into", "update", "delete", "create",
+      "table", "drop", "alter", "join", "left", "right", "inner", "outer", "on",
+      "group", "by", "order", "having", "limit", "offset", "as", "and", "or",
+      "not", "in", "is", "null", "primary", "key", "foreign", "references",
+      "default", "union", "distinct", "pragma", "values", "set", "index"
+    ]),
+    bash: new Set([
+      "if", "then", "else", "elif", "fi", "for", "while", "do", "done", "case",
+      "esac", "function", "return", "exit", "echo", "cd", "ls", "mkdir", "rm",
+      "cp", "mv", "grep", "cat", "chmod", "chown", "curl", "export", "source", "sudo"
+    ]),
+    powershell: new Set([
+      "function", "filter", "workflow", "param", "return", "if", "elseif", "else",
+      "switch", "foreach", "for", "while", "do", "until", "break", "continue",
+      "try", "catch", "finally", "throw", "trap", "exit"
+    ]),
+    css: new Set([
+      "import", "media", "keyframes", "root", "hover", "focus", "active", "before", "after"
+    ]),
+  };
+
+  const booleans = new Set([
+    "true", "false", "null", "undefined", "none", "true", "false", "nan", "nil"
+  ]);
+
+  const types = new Set([
+    "int", "str", "float", "bool", "list", "dict", "set", "tuple", "string",
+    "number", "boolean", "any", "void", "object", "promise", "array", "record",
+    "double", "char", "byte", "short", "long"
+  ]);
+
+  // JSON specialized tokenizer
+  if (targetLang === "json") {
+    return code.replace(
+      /("(?:\\u[\dA-Fa-f]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,
+      (match, str, isKey, bool) => {
+        if (str) {
+          if (isKey) {
+            return `<span class="tok-keyword">${escapeHtml(str)}</span>:`;
+          }
+          return `<span class="tok-string">${escapeHtml(str)}</span>`;
+        }
+        if (bool) {
+          return `<span class="tok-boolean">${escapeHtml(match)}</span>`;
+        }
+        return `<span class="tok-number">${escapeHtml(match)}</span>`;
+      }
+    );
+  }
+
+  // HTML / XML specialized tokenizer
+  if (targetLang === "html") {
+    return code.replace(
+      /(&lt;!--[\s\S]*?--&gt;)|(&lt;\/?[a-zA-Z0-9_-]+)|([a-zA-Z0-9_-]+)=("[^"]*"|'[^']*')|(&gt;|\/&gt;)/g,
+      (match, comment, tag, attr, attrVal, closeTag) => {
+        if (comment) return `<span class="tok-comment">${comment}</span>`;
+        if (tag) return `<span class="tok-tag">${tag}</span>`;
+        if (attr) return `<span class="tok-attr">${attr}</span>=<span class="tok-string">${attrVal}</span>`;
+        if (closeTag) return `<span class="tok-tag">${closeTag}</span>`;
+        return match;
+      }
+    );
+  }
+
+  // YAML specialized tokenizer
+  if (targetLang === "yaml") {
+    const lines = code.split("\n");
+    return lines.map(line => {
+      if (line.trim().startsWith("#")) {
+        return `<span class="tok-comment">${escapeHtml(line)}</span>`;
+      }
+      return line.replace(/^(\s*[\w.-]+)(\s*:)(.*)$/, (m, key, colon, rest) => {
+        let valHtml = escapeHtml(rest);
+        valHtml = valHtml.replace(/(#.*$)/, '<span class="tok-comment">$1</span>');
+        valHtml = valHtml.replace(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/, '<span class="tok-string">$1</span>');
+        valHtml = valHtml.replace(/\b(true|false|null|yes|no)\b/gi, '<span class="tok-boolean">$1</span>');
+        valHtml = valHtml.replace(/\b\d+(\.\d+)?\b/, '<span class="tok-number">$1</span>');
+        return `<span class="tok-keyword">${escapeHtml(key)}</span>${colon}${valHtml}`;
+      });
+    }).join("\n");
+  }
+
+  // General token regex for Python, JS, TS, Java, SQL, Bash, PowerShell, CSS
+  const commentRegex = (targetLang === "python" || targetLang === "bash" || targetLang === "powershell")
+    ? /(?:#.*$)/m
+    : (targetLang === "sql")
+    ? /(?:--.*$|\/\*[\s\S]*?\*\/)/m
+    : /(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/)/m;
+
+  const stringRegex = /(?:"""[\s\S]*?"""|'''[\s\S]*?'''|`[\s\S]*?`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/;
+  const numberRegex = /\b(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?\b/;
+  const wordRegex = /\b[a-zA-Z_$][a-zA-Z0-9_$]*\b/;
+
+  let remaining = code;
+  let result = "";
+
+  while (remaining.length > 0) {
+    const commentMatch = remaining.match(commentRegex);
+    const stringMatch = remaining.match(stringRegex);
+    const numberMatch = remaining.match(numberRegex);
+    const wordMatch = remaining.match(wordRegex);
+
+    let earliest = null;
+    let type = "";
+
+    const checkEarliest = (match, t) => {
+      if (match && (earliest === null || match.index < earliest.index)) {
+        earliest = match;
+        type = t;
+      }
+    };
+
+    checkEarliest(commentMatch, "comment");
+    checkEarliest(stringMatch, "string");
+    checkEarliest(numberMatch, "number");
+    checkEarliest(wordMatch, "word");
+
+    if (!earliest) {
+      result += escapeHtml(remaining);
+      break;
+    }
+
+    if (earliest.index > 0) {
+      result += escapeHtml(remaining.substring(0, earliest.index));
+    }
+
+    const token = earliest[0];
+    remaining = remaining.substring(earliest.index + token.length);
+
+    if (type === "comment") {
+      result += `<span class="tok-comment">${escapeHtml(token)}</span>`;
+    } else if (type === "string") {
+      result += `<span class="tok-string">${escapeHtml(token)}</span>`;
+    } else if (type === "number") {
+      result += `<span class="tok-number">${escapeHtml(token)}</span>`;
+    } else if (type === "word") {
+      const lower = token.toLowerCase();
+      const kwSet = keywords[targetLang];
+      if (kwSet && (kwSet.has(token) || (targetLang === "sql" && kwSet.has(lower)))) {
+        result += `<span class="tok-keyword">${escapeHtml(token)}</span>`;
+      } else if (booleans.has(lower)) {
+        result += `<span class="tok-boolean">${escapeHtml(token)}</span>`;
+      } else if (types.has(lower)) {
+        result += `<span class="tok-type">${escapeHtml(token)}</span>`;
+      } else if (remaining.trim().startsWith("(")) {
+        result += `<span class="tok-function">${escapeHtml(token)}</span>`;
+      } else {
+        result += escapeHtml(token);
+      }
+    }
+  }
+
+  return result;
+}
+
+// Nested Lists Parser
+function parseMarkdownLists(text) {
+  const lines = text.split('\n');
+  let inList = false;
+  let listIndentStack = [];
+  let outLines = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const ulMatch = line.match(/^(\s*)([-*•])\s+(.*)$/);
+    const olMatch = line.match(/^(\s*)(\d+)\.\s+(.*)$/);
+
+    if (ulMatch || olMatch) {
+      const indent = (ulMatch || olMatch)[1].length;
+      const isUl = !!ulMatch;
+      const currentType = isUl ? 'ul' : 'ol';
+      const content = (ulMatch || olMatch)[3];
+
+      if (!inList) {
+        inList = true;
+        listIndentStack = [{ indent, type: currentType }];
+        outLines.push(`<${currentType} class="msg-${currentType}"><li>${content}`);
+      } else {
+        const top = listIndentStack[listIndentStack.length - 1];
+        if (indent > top.indent) {
+          listIndentStack.push({ indent, type: currentType });
+          outLines.push(`<${currentType} class="msg-${currentType}"><li>${content}`);
+        } else if (indent < top.indent) {
+          while (listIndentStack.length > 1 && indent < listIndentStack[listIndentStack.length - 1].indent) {
+            const popped = listIndentStack.pop();
+            outLines.push(`</li></${popped.type}>`);
+          }
+          outLines.push(`</li><li>${content}`);
+        } else {
+          outLines.push(`</li><li>${content}`);
+        }
+      }
+    } else {
+      if (inList) {
+        while (listIndentStack.length > 0) {
+          const popped = listIndentStack.pop();
+          outLines.push(`</li></${popped.type}>`);
+        }
+        inList = false;
+        listIndentStack = [];
+      }
+      outLines.push(line);
+    }
+  }
+
+  if (inList) {
+    while (listIndentStack.length > 0) {
+      const popped = listIndentStack.pop();
+      outLines.push(`</li></${popped.type}>`);
+    }
+  }
+
+  return outLines.join('\n');
+}
+
+// Enhanced Markdown formatting helper with safe HTML escaping, syntax highlighting, and rich widgets
 function renderSafeMarkdown(text) {
   if (!text) return "";
 
+  // Normalize Windows CRLF line endings
+  let raw = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
   // 0. Safety catch: if any raw <<<PROPOSE_...>>> tags remain in text, convert to human-readable markdown
-  let raw = text.replace(/<<<PROPOSE_TASK\s+([^>]+)>{3,4}/g, (match, attrs) => {
+  raw = raw.replace(/<<<PROPOSE_TASK\s+([^>]+)>{3,4}/g, (match, attrs) => {
     const titleMatch = attrs.match(/title=["']([^"']+)["']/);
     const descMatch = attrs.match(/description=["']([^"']*)["']/);
     const dueMatch = attrs.match(/due_date=["']([^"']*)["']/);
@@ -100,34 +487,42 @@ function renderSafeMarkdown(text) {
     return `\n> 🛠️ **Proposed Patch:** \`${path}\`\n\`\`\`\n${content}\n\`\`\`\n`;
   });
 
-  // 1. Extract and preserve code blocks
+  // 1. Extract and preserve code blocks (including unclosed blocks)
   const codeBlocks = [];
-  let processed = raw.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-    const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+  const makeBlock = (lang, code) => {
+    const placeholder = `@@AEGIS-CODE-BLOCK-${codeBlocks.length}@@`;
     const cleanCode = code.trim();
-    const escapedCode = escapeHtml(cleanCode);
-    const langLabel = lang ? escapeHtml(lang) : "code";
+    const langLabel = lang ? lang.trim().toLowerCase() : "code";
+    const highlighted = highlightSyntax(cleanCode, langLabel);
+    
     codeBlocks.push(`
       <div class="code-block-wrapper">
         <div class="code-block-header">
-          <span class="code-lang-tag">${langLabel}</span>
-          <button type="button" class="btn-copy-code" onclick="navigator.clipboard.writeText(this.dataset.code); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500);" data-code="${escapeHtml(cleanCode)}">Copy</button>
+          <span class="code-lang-tag">${escapeHtml(langLabel)}</span>
+          <button type="button" class="btn-copy-code" onclick="handleCopyCodeBlock(this)" data-code="${escapeHtml(cleanCode)}">Copy</button>
         </div>
-        <pre><code class="language-${langLabel}">${escapedCode}</code></pre>
+        <pre><code class="language-${escapeHtml(langLabel)}">${highlighted}</code></pre>
       </div>
     `);
     return placeholder;
-  });
+  };
+
+  let processed = raw.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => makeBlock(lang, code));
+  processed = processed.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]+)$/g, (match, lang, code) => makeBlock(lang, code));
 
   // 2. Escape remaining text for strict XSS prevention
   processed = escapeHtml(processed);
 
-  // 3. Inline code
-  processed = processed.replace(/`([^`]+)`/g, (match, code) => `<code class="inline-code">${code}</code>`);
+  // 3. Section Headers (# to ######)
+  processed = processed.replace(/^###### (.*?)$/gm, '<h6 class="msg-h6">$1</h6>');
+  processed = processed.replace(/^##### (.*?)$/gm, '<h5 class="msg-h5">$1</h5>');
+  processed = processed.replace(/^#### (.*?)$/gm, '<h4 class="msg-h4">$1</h4>');
+  processed = processed.replace(/^### (.*?)$/gm, '<h3 class="msg-h3">$1</h3>');
+  processed = processed.replace(/^## (.*?)$/gm, '<h2 class="msg-h2">$1</h2>');
+  processed = processed.replace(/^# (.*?)$/gm, '<h1 class="msg-h1">$1</h1>');
 
-  // 4. Bold and italics
-  processed = processed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  processed = processed.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  // 4. Horizontal Rules
+  processed = processed.replace(/^(?:---|___|\*\*\*)$/gm, '<hr class="msg-hr">');
 
   // 5. Blockquotes (lines starting with &gt;)
   processed = processed.replace(/(?:^|\n)(&gt;[^\n]+(?:\n&gt;[^\n]+)*)/g, (match, block) => {
@@ -135,16 +530,7 @@ function renderSafeMarkdown(text) {
     return `\n<blockquote class="msg-blockquote">${content}</blockquote>\n`;
   });
 
-  // 6. Section Headers
-  processed = processed.replace(/^#### (.*?)$/gm, '<h4 class="msg-h4">$1</h4>');
-  processed = processed.replace(/^### (.*?)$/gm, '<h3 class="msg-h3">$1</h3>');
-  processed = processed.replace(/^## (.*?)$/gm, '<h2 class="msg-h2">$1</h2>');
-  processed = processed.replace(/^# (.*?)$/gm, '<h1 class="msg-h1">$1</h1>');
-
-  // 7. Horizontal Rules
-  processed = processed.replace(/^(?:---|___|\*\*\*)$/gm, '<hr class="msg-hr">');
-
-  // 7.5 Markdown Tables
+  // 6. Markdown Tables (Required by tests: .msg-table)
   processed = processed.replace(/(?:^|\n)((?:\|[^\n]+\|\n?)+)/g, (match, tableText) => {
     const lines = tableText.trim().split('\n').map(l => l.trim()).filter(l => l.startsWith('|') && l.endsWith('|'));
     if (lines.length < 2) return match;
@@ -153,7 +539,12 @@ function renderSafeMarkdown(text) {
 
     const parseRow = (rowLine) => {
       const rawCols = rowLine.slice(1, -1).split('|');
-      return rawCols.map(c => c.trim().replace(/&lt;br\s*\/?&gt;/gi, '<br>'));
+      return rawCols.map(c => {
+        let cell = c.trim().replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+        cell = cell.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        cell = cell.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+        return cell;
+      });
     };
 
     const headerLines = lines.slice(0, sepIdx);
@@ -178,22 +569,21 @@ function renderSafeMarkdown(text) {
     return `\n${html}\n`;
   });
 
-  // 8. Unordered Lists (lines starting with - or * or •)
-  processed = processed.replace(/(?:^|\n)((?:[-*•] [^\n]+\n?)+)/g, (match, list) => {
-    const items = list.trim().split('\n').map(item => {
-      const clean = item.replace(/^[-*•]\s+/, '');
-      return `<li>${clean}</li>`;
-    }).join('');
-    return `\n<ul class="msg-ul">${items}</ul>\n`;
-  });
+  // 7. Nested Lists (Unordered & Ordered)
+  processed = parseMarkdownLists(processed);
 
-  // 9. Ordered Lists (lines starting with 1. 2. etc)
-  processed = processed.replace(/(?:^|\n)((?:\d+\. [^\n]+\n?)+)/g, (match, list) => {
-    const items = list.trim().split('\n').map(item => {
-      const clean = item.replace(/^\d+\.\s+/, '');
-      return `<li>${clean}</li>`;
-    }).join('');
-    return `\n<ol class="msg-ol">${items}</ol>\n`;
+  // 8. Inline formatting
+  processed = processed.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+  processed = processed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  processed = processed.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  processed = processed.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  processed = processed.replace(/_([^_]+)_/g, '<em>$1</em>');
+  processed = processed.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+  // 9. Links [text](url) with safe URL sanitization
+  processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
+    const safeUrl = sanitizeUrl(url);
+    return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="msg-link">${linkText}</a>`;
   });
 
   // 10. Paragraphs / Linebreaks
@@ -201,16 +591,54 @@ function renderSafeMarkdown(text) {
   processed = processed.replace(/\n/g, '<br>');
 
   // Clean up superfluous breaks around block-level elements
-  processed = processed.replace(/(?:<br\s*\/?>)+(<\/?(?:h[1-4]|ul|ol|li|blockquote|hr|table|thead|tbody|tr|th|td|div|pre))/gi, '$1');
-  processed = processed.replace(/(<\/(?:h[1-4]|ul|ol|blockquote|hr|table|div|pre)>)(?:<br\s*\/?>)+/gi, '$1');
+  processed = processed.replace(/(?:<br\s*\/?>)+(<\/?(?:h[1-6]|ul|ol|li|blockquote|hr|table|thead|tbody|tr|th|td|div|pre))/gi, '$1');
+  processed = processed.replace(/(<\/(?:h[1-6]|ul|ol|blockquote|hr|table|div|pre)>)(?:<br\s*\/?>)+/gi, '$1');
 
-  // 11. Restore preserved code blocks
+  // 11. Restore preserved syntax-highlighted code blocks
   codeBlocks.forEach((block, idx) => {
-    processed = processed.replace(`__CODE_BLOCK_${idx}__`, block);
+    processed = processed.replace(`@@AEGIS-CODE-BLOCK-${idx}@@`, block);
   });
 
   return processed;
 }
+
+// Global copy handlers
+window.handleCopyCodeBlock = function(btn) {
+  const code = btn.dataset.code;
+  copyToClipboard(code, "Code copied to clipboard!").then(ok => {
+    if (ok) {
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = "Copy"; }, 1600);
+    }
+  });
+};
+
+window.handleCopyAssistantMessage = function(buttonEl) {
+  const bubble = buttonEl.closest(".message-bubble");
+  if (!bubble) return;
+  const clone = bubble.cloneNode(true);
+  const actions = clone.querySelector(".message-actions-bar");
+  if (actions) actions.remove();
+  const text = clone.innerText.trim();
+
+  copyToClipboard(text, "Response copied to clipboard!").then(ok => {
+    if (ok) {
+      const span = buttonEl.querySelector("span");
+      if (span) {
+        const orig = span.textContent;
+        span.textContent = "Copied!";
+        setTimeout(() => { span.textContent = orig; }, 1600);
+      }
+    }
+  });
+};
+
+window.handleRetryLastMessage = function() {
+  if (state.lastUserMessage) {
+    dom.messageInput.value = state.lastUserMessage;
+    dom.chatForm.dispatchEvent(new Event("submit"));
+  }
+};
 
 // API Client
 async function api(path, options = {}) {
@@ -327,29 +755,76 @@ async function checkHealth() {
 }
 
 // Conversations Management
-async function loadConversations() {
+async function loadConversations(searchQuery = "") {
   try {
     const url = state.activeProjectId 
       ? `/api/conversations?project_id=${encodeURIComponent(state.activeProjectId)}` 
       : `/api/conversations`;
     const convs = await api(url);
-    renderConversationList(convs);
+    state.allConversations = convs;
+
+    const filtered = searchQuery 
+      ? convs.filter(c => (c.title || "").toLowerCase().includes(searchQuery.toLowerCase()))
+      : convs;
+
+    renderConversationList(filtered, !!searchQuery);
   } catch (err) {
     console.error("Failed to load conversations:", err);
   }
 }
 
-function renderConversationList(convs) {
+function renderConversationList(convs, isSearching = false) {
   if (!convs.length) {
-    dom.conversationList.innerHTML = `<div class="empty-state">No conversations yet</div>`;
+    dom.conversationList.innerHTML = `<div class="empty-state">${isSearching ? 'No matching conversations' : 'No conversations yet'}</div>`;
     return;
   }
-  dom.conversationList.innerHTML = convs.map(c => `
-    <div class="conversation-item ${c.id === state.activeConversationId ? 'active' : ''}" data-id="${c.id}">
+
+  if (isSearching) {
+    dom.conversationList.innerHTML = convs.map(c => renderConversationItemHtml(c)).join("");
+    return;
+  }
+
+  const grouped = groupConversationsByDate(convs);
+  let html = "";
+
+  const sections = [
+    { title: "Today", list: grouped.today },
+    { title: "Yesterday", list: grouped.yesterday },
+    { title: "Previous 7 Days", list: grouped.previous7Days },
+    { title: "Older", list: grouped.older },
+  ];
+
+  sections.forEach(sec => {
+    if (sec.list.length > 0) {
+      html += `<div class="date-group-header">${sec.title}</div>`;
+      html += sec.list.map(c => renderConversationItemHtml(c)).join("");
+    }
+  });
+
+  dom.conversationList.innerHTML = html;
+}
+
+function renderConversationItemHtml(c) {
+  const isActive = c.id === state.activeConversationId;
+  return `
+    <div class="conversation-item ${isActive ? 'active' : ''}" data-id="${c.id}" title="${escapeHtml(c.title)} (${formatDate(c.updated_at || c.created_at)})">
       <span class="conversation-title">${escapeHtml(c.title)}</span>
-      <button class="btn-close btn-del" data-del-id="${c.id}" title="Delete session">&times;</button>
+      <div class="conversation-item-actions">
+        <button type="button" class="conv-action-btn btn-rename" data-rename-id="${c.id}" title="Rename conversation">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </button>
+        <button type="button" class="conv-action-btn btn-del" data-del-id="${c.id}" title="Delete conversation">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
     </div>
-  `).join("");
+  `;
 }
 
 async function selectConversation(convId) {
@@ -358,7 +833,8 @@ async function selectConversation(convId) {
     const conv = await api(`/api/conversations/${convId}`);
     dom.activeSessionTitle.textContent = conv.title || "Active Session";
     renderMessages(conv.messages || []);
-    loadConversations();
+    loadConversations(dom.conversationSearchInput.value.trim());
+    closeMobileSidebar();
   } catch (err) {
     alert("Error loading conversation: " + err.message);
   }
@@ -369,7 +845,28 @@ function createNewSession() {
   dom.activeSessionTitle.textContent = "New Session";
   dom.messagesContainer.innerHTML = "";
   dom.messagesContainer.appendChild(dom.welcomeHero);
-  loadConversations();
+  loadConversations(dom.conversationSearchInput.value.trim());
+  closeMobileSidebar();
+}
+
+async function renameConversationModal(convId) {
+  const currentConv = state.allConversations.find(c => c.id === convId);
+  const currentTitle = currentConv ? currentConv.title : (dom.activeSessionTitle.textContent || "Conversation");
+  const newTitle = prompt("Enter new title for conversation:", currentTitle);
+  if (!newTitle || !newTitle.trim() || newTitle.trim() === currentTitle) return;
+
+  try {
+    const updated = await api(`/api/conversations/${convId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ title: newTitle.trim() }),
+    });
+    if (state.activeConversationId === convId) {
+      dom.activeSessionTitle.textContent = updated.title;
+    }
+    loadConversations(dom.conversationSearchInput.value.trim());
+  } catch (err) {
+    alert("Failed to rename conversation: " + err.message);
+  }
 }
 
 // Render Messages & Approvals
@@ -401,6 +898,28 @@ function appendMessageToDom(m) {
     `;
   }
 
+  let actionsBarHtml = "";
+  if (m.role === "assistant") {
+    actionsBarHtml = `
+      <div class="message-actions-bar">
+        <button type="button" class="btn-msg-action btn-copy-response" onclick="handleCopyAssistantMessage(this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>Copy</span>
+        </button>
+        <button type="button" class="btn-msg-action btn-retry" onclick="handleRetryLastMessage()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6"></path>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          <span>Retry</span>
+        </button>
+      </div>
+    `;
+  }
+
   row.innerHTML = `
     <div class="message-meta">
       <span class="message-role ${m.role}">${m.role === 'user' ? 'Owner' : 'Aegis AI'}</span>
@@ -410,11 +929,17 @@ function appendMessageToDom(m) {
     ${memoriesHtml}
     <div class="message-bubble">
       ${renderSafeMarkdown(m.content)}
+      ${actionsBarHtml}
     </div>
   `;
 
   dom.messagesContainer.appendChild(row);
-  dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+
+  // Auto-scroll only if user is already near bottom
+  const isNearBottom = dom.messagesContainer.scrollHeight - dom.messagesContainer.scrollTop - dom.messagesContainer.clientHeight < 160;
+  if (isNearBottom) {
+    dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+  }
 }
 
 function renderApprovalCardInMessage(approval) {
@@ -517,7 +1042,7 @@ async function refreshPendingApprovals() {
       dom.pendingCountBadge.style.display = "inline-block";
       dom.pendingCountBadge.textContent = pending.length;
       dom.topPendingBanner.style.display = "flex";
-      dom.topPendingText.textContent = `${pending.length} Action Pending Approval`;
+      dom.topPendingText.textContent = `${pending.length} Action Pending`;
     } else {
       dom.pendingCountBadge.style.display = "none";
       dom.topPendingBanner.style.display = "none";
@@ -548,7 +1073,6 @@ function showThinkingIndicator(initialText = "Reasoning & operating...") {
         </div>
         <span class="thinking-status-text" id="thinkingStatusText">${escapeHtml(initialText)}</span>
       </div>
-      <div class="thinking-shimmer-bar"></div>
     </div>
   `;
 
@@ -581,11 +1105,22 @@ function showThinkingIndicator(initialText = "Reasoning & operating...") {
   };
 }
 
+// Request Cancellation Helper
+function abortCurrentRequest() {
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+    showToast("Generation cancelled", "error");
+  }
+}
+
 // Chat Form Submission
 dom.chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const text = dom.messageInput.value.trim();
   if (!text) return;
+
+  state.lastUserMessage = text;
 
   // Render user message immediately
   appendMessageToDom({
@@ -596,11 +1131,13 @@ dom.chatForm.addEventListener("submit", async (e) => {
 
   dom.messageInput.value = "";
   dom.messageInput.style.height = "auto";
-  dom.btnSend.disabled = true;
-  const originalSendContent = dom.btnSend.innerHTML;
-  dom.btnSend.innerHTML = '<span class="spinner-icon"></span>';
+  
+  // Switch Send to Stop button
+  dom.btnSend.style.display = "none";
+  if (dom.btnStop) dom.btnStop.style.display = "flex";
 
   const removeThinking = showThinkingIndicator();
+  currentAbortController = new AbortController();
 
   try {
     const payload = {
@@ -614,6 +1151,7 @@ dom.chatForm.addEventListener("submit", async (e) => {
     const res = await api("/api/chat", {
       method: "POST",
       body: JSON.stringify(payload),
+      signal: currentAbortController.signal,
     });
 
     removeThinking();
@@ -637,19 +1175,45 @@ dom.chatForm.addEventListener("submit", async (e) => {
       refreshPendingApprovals();
     }
 
-    loadConversations();
+    loadConversations(dom.conversationSearchInput.value.trim());
   } catch (err) {
     removeThinking();
-    appendMessageToDom({
-      role: "assistant",
-      content: `⚠️ Communication Error: ${err.message}`,
-      created_at: new Date().toISOString(),
-    });
+    if (err.name === "AbortError" || (err.message && err.message.toLowerCase().includes("abort"))) {
+      appendMessageToDom({
+        role: "assistant",
+        content: "⏹️ *Generation cancelled by user.*",
+        created_at: new Date().toISOString(),
+      });
+    } else {
+      appendMessageToDom({
+        role: "assistant",
+        content: `⚠️ Communication Error: ${err.message}`,
+        created_at: new Date().toISOString(),
+      });
+    }
   } finally {
+    currentAbortController = null;
+    if (dom.btnStop) dom.btnStop.style.display = "none";
+    dom.btnSend.style.display = "flex";
     dom.btnSend.disabled = false;
-    dom.btnSend.innerHTML = originalSendContent;
+    dom.messageInput.focus();
   }
 });
+
+// Sidebar & Mobile Drawer Toggles
+function toggleSidebarCollapse() {
+  dom.sidebar.classList.toggle("collapsed");
+}
+
+function openMobileSidebar() {
+  dom.sidebar.classList.add("open");
+  dom.sidebarBackdrop.classList.add("active");
+}
+
+function closeMobileSidebar() {
+  dom.sidebar.classList.remove("open");
+  dom.sidebarBackdrop.classList.remove("active");
+}
 
 // Projects Management
 async function loadProjects() {
@@ -657,11 +1221,9 @@ async function loadProjects() {
     const list = await api("/api/projects");
     state.projects = list;
     
-    // Populate select
     dom.projectSelector.innerHTML = `<option value="">(Global / No Project)</option>` + 
       list.map(p => `<option value="${p.id}" ${p.id === state.activeProjectId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join("");
     
-    // Update badge
     if (state.activeProjectId) {
       const activeP = list.find(p => p.id === state.activeProjectId);
       if (activeP) {
@@ -832,7 +1394,6 @@ async function loadSkillsCatalog() {
 
 window.activateSkill = function(id, name) {
   state.activeSkillId = id;
-  // Update pills
   document.querySelectorAll(".skill-pill").forEach(p => {
     p.classList.toggle("active", p.dataset.skill === id);
   });
@@ -911,17 +1472,76 @@ document.querySelectorAll("[data-close-modal]").forEach(btn => {
 
 // Event Listeners Setup
 function setupEventListeners() {
+  // Sidebar collapse & Mobile drawer
+  if (dom.btnToggleSidebar) {
+    dom.btnToggleSidebar.addEventListener("click", toggleSidebarCollapse);
+  }
+  if (dom.btnMobileMenu) {
+    dom.btnMobileMenu.addEventListener("click", () => {
+      if (window.innerWidth <= 768) {
+        openMobileSidebar();
+      } else {
+        toggleSidebarCollapse();
+      }
+    });
+  }
+  if (dom.sidebarBackdrop) {
+    dom.sidebarBackdrop.addEventListener("click", closeMobileSidebar);
+  }
+
+  // Stop Generation button
+  if (dom.btnStop) {
+    dom.btnStop.addEventListener("click", abortCurrentRequest);
+  }
+
+  // New session button
   dom.btnNewSession.addEventListener("click", createNewSession);
 
+  // Search Conversations
+  if (dom.conversationSearchInput) {
+    dom.conversationSearchInput.addEventListener("input", (e) => {
+      const q = e.target.value;
+      if (dom.btnClearSearch) {
+        dom.btnClearSearch.style.display = q ? "block" : "none";
+      }
+      loadConversations(q);
+    });
+  }
+  if (dom.btnClearSearch) {
+    dom.btnClearSearch.addEventListener("click", () => {
+      dom.conversationSearchInput.value = "";
+      dom.btnClearSearch.style.display = "none";
+      loadConversations("");
+    });
+  }
+
+  // Active Session Title Click / Rename
+  if (dom.btnRenameActiveSession) {
+    dom.btnRenameActiveSession.addEventListener("click", () => {
+      if (state.activeConversationId) {
+        renameConversationModal(state.activeConversationId);
+      }
+    });
+  }
+  if (dom.activeSessionTitle) {
+    dom.activeSessionTitle.addEventListener("click", () => {
+      if (state.activeConversationId) {
+        renameConversationModal(state.activeConversationId);
+      }
+    });
+  }
+
+  // Status refresh button
   dom.btnRefreshStatus.addEventListener("click", () => {
     checkHealth();
     refreshPendingApprovals();
   });
 
+  // Project selector
   dom.projectSelector.addEventListener("change", (e) => {
     state.activeProjectId = e.target.value || null;
     loadProjects();
-    loadConversations();
+    loadConversations(dom.conversationSearchInput ? dom.conversationSearchInput.value.trim() : "");
   });
 
   dom.btnOpenProjectsModal.addEventListener("click", () => {
@@ -930,10 +1550,13 @@ function setupEventListeners() {
     loadTasksForProject(state.activeProjectId);
   });
 
-  // Navigation Tabs
+  // Navigation Tabs in Sidebar
   document.querySelectorAll(".sidebar-nav .nav-tab").forEach(tab => {
     tab.addEventListener("click", () => {
       const target = tab.dataset.tab;
+      document.querySelectorAll(".sidebar-nav .nav-tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+
       if (target === "sessions") {
         closeAllModals();
       } else if (target === "skills") {
@@ -952,22 +1575,23 @@ function setupEventListeners() {
         openModal(dom.modalAudit);
         loadAuditTrail();
       }
+      closeMobileSidebar();
     });
   });
 
-  // Feature Card Prompts
-  document.querySelectorAll(".feature-card").forEach(card => {
-    card.addEventListener("click", () => {
-      const prompt = card.dataset.prompt;
+  // ChatGPT Suggestion Chips on Welcome Screen
+  document.querySelectorAll(".suggestion-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const prompt = chip.dataset.prompt;
       if (prompt) {
         dom.messageInput.value = prompt;
         dom.messageInput.focus();
-        dom.messageInput.dispatchEvent(new Event("input"));
+        dom.chatForm.dispatchEvent(new Event("submit"));
       }
     });
   });
 
-  // Auto-resize & Enter-to-send
+  // Auto-resize & Enter-to-send (Shift+Enter for newline)
   dom.messageInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -976,7 +1600,7 @@ function setupEventListeners() {
   });
   dom.messageInput.addEventListener("input", () => {
     dom.messageInput.style.height = "auto";
-    dom.messageInput.style.height = Math.min(dom.messageInput.scrollHeight, 160) + "px";
+    dom.messageInput.style.height = Math.min(dom.messageInput.scrollHeight, 180) + "px";
   });
 
   // Skill Pills
@@ -1001,20 +1625,35 @@ function setupEventListeners() {
     loadModalApprovals("PENDING_APPROVAL");
   });
 
-  // Session click in sidebar
+  if (dom.btnCloseApprovalPanel) {
+    dom.btnCloseApprovalPanel.addEventListener("click", () => {
+      dom.pendingApprovalsPanel.style.display = "none";
+    });
+  }
+
+  // Session item clicks (select, rename, delete)
   dom.conversationList.addEventListener("click", (e) => {
     const delBtn = e.target.closest("[data-del-id]");
     if (delBtn) {
       e.stopPropagation();
       const id = delBtn.dataset.delId;
-      if (confirm("Delete this session?")) {
+      if (confirm("Delete this conversation session?")) {
         api(`/api/conversations/${id}`, { method: "DELETE" }).then(() => {
           if (state.activeConversationId === id) createNewSession();
-          loadConversations();
+          loadConversations(dom.conversationSearchInput.value.trim());
         });
       }
       return;
     }
+
+    const renameBtn = e.target.closest("[data-rename-id]");
+    if (renameBtn) {
+      e.stopPropagation();
+      const id = renameBtn.dataset.renameId;
+      renameConversationModal(id);
+      return;
+    }
+
     const item = e.target.closest(".conversation-item");
     if (item) {
       selectConversation(item.dataset.id);
@@ -1134,6 +1773,22 @@ function setupEventListeners() {
       alert("Error: " + err.message);
     }
   });
+
+  // Global Keyboard Shortcuts
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (currentAbortController) {
+        abortCurrentRequest();
+      } else {
+        closeAllModals();
+        closeMobileSidebar();
+      }
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "[") {
+      e.preventDefault();
+      toggleSidebarCollapse();
+    }
+  });
 }
 
 // Approvals Modal Loader
@@ -1174,4 +1829,3 @@ window.addEventListener("DOMContentLoaded", () => {
   loadProjects();
   refreshPendingApprovals();
 });
-
