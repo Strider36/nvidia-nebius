@@ -352,6 +352,93 @@ body {
   gap: 10px;
 }
 
+/* Provider Switcher Controls */
+.provider-switcher-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-tertiary);
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.provider-pill-switch {
+  display: flex;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.provider-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.provider-pill-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.provider-pill-btn.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.provider-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--accent-amber);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.provider-indicator-dot.ready {
+  background-color: var(--accent-emerald);
+  box-shadow: 0 0 6px var(--accent-emerald-glow);
+}
+
+.provider-indicator-dot.offline, .provider-indicator-dot.error {
+  background-color: var(--accent-rose);
+  box-shadow: 0 0 6px rgba(244, 63, 94, 0.5);
+}
+
+.provider-indicator-dot.model_missing {
+  background-color: var(--accent-amber);
+  box-shadow: 0 0 6px var(--accent-amber-glow);
+}
+
+.provider-indicator-dot.unconfigured {
+  background-color: var(--text-muted);
+}
+
+.provider-model-tag {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  color: var(--accent-cyan);
+  padding: 2px 6px;
+  background: rgba(6, 182, 212, 0.1);
+  border-radius: 4px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .banner-alert {
   display: flex;
   align-items: center;

@@ -7,6 +7,11 @@ from pydantic import BaseModel, Field
 
 
 # --- Health & Config ---
+class ProviderType(str, Enum):
+    OLLAMA = "ollama"
+    CLOUD = "cloud"
+
+
 class HealthResponse(BaseModel):
     status: str
     is_ready: bool
@@ -18,6 +23,29 @@ class HealthResponse(BaseModel):
     host: str
     port: int
     version: str
+    provider: str = "ollama"
+    provider_status: Optional[str] = None
+    ollama_model: Optional[str] = None
+    cloud_model: Optional[str] = None
+
+
+class ProviderUpdateRequest(BaseModel):
+    provider: str = Field(..., description="Inference provider name ('ollama' or 'cloud')")
+
+
+class ProviderStatusResponse(BaseModel):
+    active_provider: str
+    supported_providers: List[str]
+    is_ready: bool
+    status: str
+    message: Optional[str] = None
+    ollama_base_url: str
+    ollama_model: str
+    ollama_available: bool
+    ollama_models: List[str] = []
+    cloud_base_url: str
+    cloud_model: str
+    cloud_has_key: bool
 
 
 # --- Memories ---
@@ -137,6 +165,7 @@ class ChatRequest(BaseModel):
     conversation_id: Optional[str] = None
     project_id: Optional[str] = None
     skill_id: Optional[str] = None
+    provider: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

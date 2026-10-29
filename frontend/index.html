@@ -120,6 +120,21 @@
           <span class="active-badge badge-skill" id="activeSkillBadge" style="display:none;">Skill: General</span>
         </div>
         <div class="topbar-right">
+          <!-- Dual-Provider Selector -->
+          <div class="provider-switcher-wrapper" id="providerSwitcher">
+            <div class="provider-pill-switch" role="group" aria-label="Inference Provider Selector">
+              <button type="button" class="provider-pill-btn active" id="btnProviderOllama" data-provider="ollama" title="Local — Nemotron via Ollama (127.0.0.1:11434)">
+                <span class="provider-indicator-dot ready" id="dotProviderOllama"></span>
+                <span class="provider-name">Local (Ollama)</span>
+              </button>
+              <button type="button" class="provider-pill-btn" id="btnProviderCloud" data-provider="cloud" title="Cloud — Nebius Token Factory / OpenRouter">
+                <span class="provider-indicator-dot" id="dotProviderCloud"></span>
+                <span class="provider-name">Cloud</span>
+              </button>
+            </div>
+            <span class="provider-model-tag" id="topbarProviderTag" title="Active Model">nemotron-3.5-bolt:e4b</span>
+          </div>
+
           <div class="banner-alert" id="topPendingBanner" style="display:none;">
             <span class="pulse-warning"></span>
             <span id="topPendingText">1 Action Pending Approval</span>

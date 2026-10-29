@@ -1,19 +1,22 @@
 # Aegis AI — Private Personal AI Operator
 
-**Aegis AI** is a functional, security-first personal AI assistant and autonomous coding operator powered by **NVIDIA Nemotron** running through **Nebius Token Factory**.
+**Aegis AI** is a functional, security-first personal AI assistant and autonomous coding operator featuring **Dual-Provider Inference**:
+1. **Local Inference**: Powered by **NVIDIA Nemotron 3.5 Bolt E4B** running locally on your hardware via **Ollama** (`http://127.0.0.1:11434`).
+2. **Cloud Inference**: Powered by **NVIDIA Nemotron** via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`).
 
-It combines a polished obsidian-themed responsive web interface, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before consequential modifications or test executions are made.
+It combines a polished obsidian-themed responsive web interface with runtime provider switching, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before consequential modifications or test executions are made.
 
 ---
 
 ## Key Capabilities
 
-- **Hybrid Privacy Architecture**: All memory, task backlogs, audit logs, and workspace files remain strictly local on your PC. Cloud inference is used solely for bounded prompt generation through Nebius Token Factory.
+- **Dual-Provider Architecture**: Seamlessly toggle between local zero-data-leakage Ollama inference (NVIDIA Nemotron 3.5 Bolt E4B) and high-throughput cloud inference directly from the UI or API at runtime without restarting the server.
+- **Strict Provider Isolation**: Zero silent fallbacks. A failure in local inference will never send your code or conversation to a cloud provider without explicit user intent.
 - **Persistent Local Memory**: Stores developer preferences, project context, instructions, and session summaries in SQLite. Keyword-indexed retrieval automatically retrieves relevant memories per prompt and displays them transparently in the UI. Sensitive data (passwords, tokens, keys) is blocked at the memory gateway.
 - **Safe Coding Workspace**: Restricted to `./workspace` (or your configured `AEGIS_WORKSPACE`). Enforces path canonicalization, blocks path traversal (`../`), forbids access to `.env` or SSH keys, computes unified diffs, detects concurrent file change conflicts, and automatically creates timestamped backups in `.aegis_backups/` before applying modifications.
 - **Human Approval Lifecycle**: Consequential actions transition through `PROPOSED -> PENDING_APPROVAL -> APPROVED -> EXECUTING -> SUCCEEDED / FAILED`. The model cannot self-approve; every patch, task addition, and allowlisted command requires explicit user confirmation with full diffs and risk disclosure.
 - **Allowlisted Command Execution**: Prohibits arbitrary shell access. Only explicitly allowlisted test runner commands (`pytest`, `python -m unittest`, `npm test`) can be executed with strict timeouts and isolated process spawning.
-- **Reusable Skills**: Comes with 4 built-in system skills with explicit tool bindings:
+- **Reusable Skills**: Built-in system skills with explicit tool bindings:
   1. **Project Planner**: Deconstructs goals into milestones and structured tasks.
   2. **Code Explainer**: Inspects code structure, edge cases, and architectural tradeoffs.
   3. **Debugger**: Diagnoses stack traces and formulates minimal, reviewable patches.
@@ -25,38 +28,43 @@ It combines a polished obsidian-themed responsive web interface, persistent sema
 ## Architecture Diagram
 
 ```
-+-------------------------------------------------------------------------+
-|                              LOCAL HOST                                 |
-|                                                                         |
-|  +------------------------+          +-------------------------------+  |
-|  | Modern Web UI (Dark)   | <------> | FastAPI Backend (127.0.0.1)   |  |
-|  | HTML / CSS / VanillaJS |          +---------------+---------------+  |
-|  +------------------------+                          |                  |
-|                                                      v                  |
-|  +-------------------------------------------------------------------+  |
-|  | Aegis Security & Orchestration Layer                              |  |
-|  | - Path Resolution & Traversal Guard                               |  |
-|  | - Human Approval Life Cycle Engine                                |  |
-|  | - Command Allowlist Verifier (pytest, unittest, npm)              |  |
-|  | - Sensitive Token Redactor & Secret Shield                        |  |
-|  +-----------+----------------------+--------------------+-----------+  |
-|              |                      |                    |              |
-|              v                      v                    v              |
-|     +-----------------+    +-----------------+  +-----------------+     |
-|     | SQLite Database |    | Safe Workspace  |  | Reusable Skills |     |
-|     | - Memories      |    | (./workspace)   |  | - Planner       |     |
-|     | - Projects      |    | - Diffs & Files |  | - Explainer     |     |
-|     | - Approvals     |    | - Auto-Backups  |  | - Debugger      |     |
-|     | - Audit Trail   |    |                 |  | - Test Writer   |     |
-|     +-----------------+    +-----------------+  +-----------------+     |
-+--------------------------------------|----------------------------------+
-                                       | HTTPS (Bounded Tokens)
-                                       v
-                     +-----------------------------------+
-                     |   Nebius Token Factory Cloud      |
-                     |   NVIDIA Nemotron Inference       |
-                     +-----------------------------------+
++-----------------------------------------------------------------------------------+
+|                                     LOCAL HOST                                    |
+|                                                                                   |
+|  +------------------------+                     +-------------------------------+  |
+|  | Modern Web UI (Dark)   | <-----------------> | FastAPI Backend (127.0.0.1)   |  |
+|  | [Local | Cloud Toggle] |                     +---------------+---------------+  |
+|  +------------------------+                                     |                  |
+|                                                                 v                  |
+|  +------------------------------------------------------------------------------+  |
+|  | Aegis Security & Orchestration Layer                                         |  |
+|  | - Request-Level Provider Snapshotting & Isolation Guard                      |  |
+|  | - Path Resolution & Traversal Guard                                          |  |
+|  | - Human Approval Life Cycle Engine                                           |  |
+|  | - Command Allowlist Verifier (pytest, unittest, npm)                         |  |
+|  | - Sensitive Token Redactor & Secret Shield                                   |  |
+|  +----------------------+--------------------+--------------------+--------------+  |
+|                         |                    |                    |                |
+|       +-----------------+                    v                    |                |
+|       |                               +-----------------+         |                |
+|       v                               | Reusable Skills |         v                |
+|  +-----------------+                  | - Planner       |    +-----------------+   |
+|  | SQLite Database |                  | - Explainer     |    | Safe Workspace  |   |
+|  | - Memories      |                  | - Debugger      |    | (./workspace)   |   |
+|  | - Projects      |                  | - Test Writer   |    | - Diffs & Files |   |
+|  | - Approvals     |                  +-----------------+    | - Auto-Backups  |   |
+|  | - Audit Trail   |                                         +-----------------+   |
+|  +-----------------+                                                               |
++-------------|----------------------------------------------------|-----------------+
+              | HTTP (Localhost)                                   | HTTPS (Bounded)
+              v                                                    v
++-------------------------------+                +-----------------------------------+
+|       Ollama Local API        |                |    Nebius Token Factory Cloud     |
+|  (http://127.0.0.1:11434)     |                |     OpenRouter API Gateway        |
+|  NVIDIA Nemotron 3.5 Bolt E4B |                |    NVIDIA Nemotron Inference      |
++-------------------------------+                +-----------------------------------+
 ```
+
 
 ---
 
@@ -82,15 +90,38 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
+### 3. Local Model Setup (Ollama with NVIDIA Nemotron 3.5 Bolt E4B)
+
+To run local private inference:
+1. Download and install **Ollama** from [ollama.com](https://ollama.com).
+2. Pull the NVIDIA Nemotron 3.5 Bolt model:
+   ```bash
+   ollama pull nemotron-3.5-bolt:e4b
+   ```
+3. Verify that the model is installed:
+   ```bash
+   ollama list
+   ```
+   *Expected output includes `nemotron-3.5-bolt:e4b`.*
+4. Ensure Ollama service is running (`http://127.0.0.1:11434`).
+
+### 4. Configure Environment Variables
 Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and set your credentials (OpenRouter or Nebius Token Factory):
+Open `.env` and set your preferred provider settings:
 ```ini
-# OpenRouter / Nebius Model Inference Configuration
+# Inference Provider Selection ('ollama' or 'cloud')
+LLM_PROVIDER=ollama
+
+# Local Ollama Inference Configuration
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=nemotron-3.5-bolt:e4b
+OLLAMA_TIMEOUT=60.0
+
+# Cloud Inference Configuration (Optional if using Local Ollama)
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 NEBIUS_BASE_URL=https://openrouter.ai/api/v1
 NEBIUS_MODEL_ID=nvidia/nemotron-3-nano-30b-a3b
@@ -103,7 +134,26 @@ AEGIS_PORT=8000
 AEGIS_DEBUG=false
 ```
 
-*Note: If `NEBIUS_API_KEY` is omitted, the application starts gracefully in a degraded mode, allowing full access to the UI, persistent memories, projects, workspace explorer, and approvals.*
+---
+
+## Dual-Provider Runtime Switching
+
+Aegis AI lets you switch between local Ollama inference and cloud inference **without restarting the server**:
+
+1. **Via Web UI**:
+   - In the top header bar, click **Local (Ollama)** or **Cloud**.
+   - The indicator dot reflects immediate connectivity (green for ready, amber for missing model, red for offline).
+   - The active model tag updates dynamically.
+
+2. **Via REST API**:
+   - Query status: `GET /api/provider`
+   - Switch provider: `POST /api/provider` with payload `{"provider": "ollama"}` or `{"provider": "cloud"}`.
+
+### Connection Diagnostics & Troubleshooting:
+- **Connection Error (`Unable to reach Ollama at http://127.0.0.1:11434`)**: Verify Ollama is running (`Get-Process *ollama*` on Windows or `ollama serve`).
+- **Model Missing Error (`Model '...' not found in Ollama`)**: Run `ollama pull nemotron-3.5-bolt:e4b` or update `OLLAMA_MODEL` in `.env`.
+- **Request Timeout**: First-time loading of 7.5B+ GGUF models into GPU VRAM can take 30-45 seconds. Increase `OLLAMA_TIMEOUT=90.0` in `.env` if your system uses CPU offloading.
+- **Strict Isolation Guarantee**: A failure in local Ollama will **never** automatically fall back to cloud inference. Aegis AI reports the error directly to preserve full privacy.
 
 ---
 
@@ -122,6 +172,7 @@ Open your browser and navigate to:
 ```
 http://127.0.0.1:8000
 ```
+
 
 ---
 

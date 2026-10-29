@@ -232,10 +232,12 @@ class AgentService:
         else:
             history_msgs.append({"role": "user", "content": req.message})
 
-        # 5. Call LLM Service
+        # 5. Call LLM Service with per-request provider isolation
+        target_provider = (req.provider.lower() if req.provider and req.provider.lower() in ("ollama", "cloud") else None) or settings.get_provider_snapshot()
         raw_reply, err = llm_service.generate(
             messages=history_msgs,
             system_prompt=system_prompt,
+            provider=target_provider,
         )
 
         if err or raw_reply is None:

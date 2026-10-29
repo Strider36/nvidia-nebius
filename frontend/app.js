@@ -8,7 +8,9 @@ const state = {
   activeConversationId: null,
   activeProjectId: null,
   activeSkillId: "",
+  activeProvider: "ollama",
   health: null,
+  providerStatus: null,
   projects: [],
   skills: [],
   pendingApprovals: [],
@@ -19,6 +21,11 @@ const dom = {
   systemStatusBadge: document.getElementById("systemStatusBadge"),
   systemStatusText: document.getElementById("systemStatusText"),
   sidebarModelId: document.getElementById("sidebarModelId"),
+  btnProviderOllama: document.getElementById("btnProviderOllama"),
+  btnProviderCloud: document.getElementById("btnProviderCloud"),
+  dotProviderOllama: document.getElementById("dotProviderOllama"),
+  dotProviderCloud: document.getElementById("dotProviderCloud"),
+  topbarProviderTag: document.getElementById("topbarProviderTag"),
   btnNewSession: document.getElementById("btnNewSession"),
   projectSelector: document.getElementById("projectSelector"),
   btnOpenProjectsModal: document.getElementById("btnOpenProjectsModal"),
@@ -220,20 +227,99 @@ async function api(path, options = {}) {
   return res.json();
 }
 
-// System Health
+// System Health & Dual-Provider Management
+async function refreshProviderStatus() {
+  try {
+    const data = await api("/api/provider");
+    state.providerStatus = data;
+    state.activeProvider = data.active_provider;
+    updateProviderUI(data);
+  } catch (err) {
+    console.error("Failed to fetch provider status:", err);
+  }
+}
+
+function updateProviderUI(data) {
+  if (!data) return;
+  const isOllama = data.active_provider === "ollama";
+  if (dom.btnProviderOllama && dom.btnProviderCloud) {
+    dom.btnProviderOllama.classList.toggle("active", isOllama);
+    dom.btnProviderCloud.classList.toggle("active", !isOllama);
+  }
+
+  // Update dots and tooltips
+  if (dom.dotProviderOllama) {
+    dom.dotProviderOllama.className = `provider-indicator-dot ${data.ollama_available ? "ready" : "offline"}`;
+    if (dom.btnProviderOllama) {
+      dom.btnProviderOllama.title = data.ollama_available 
+        ? `Local — Nemotron via Ollama (${data.ollama_model})` 
+        : `Local — Ollama offline at ${data.ollama_base_url}`;
+    }
+  }
+
+  if (dom.dotProviderCloud) {
+    dom.dotProviderCloud.className = `provider-indicator-dot ${data.cloud_has_key ? "ready" : "unconfigured"}`;
+    if (dom.btnProviderCloud) {
+      dom.btnProviderCloud.title = data.cloud_has_key 
+        ? `Cloud — Nebius / OpenRouter (${data.cloud_model})` 
+        : `Cloud — API Key required (set OPENROUTER_API_KEY in .env)`;
+    }
+  }
+
+  // Update model tags in topbar and sidebar
+  const activeModel = isOllama ? data.ollama_model : data.cloud_model;
+  if (dom.topbarProviderTag) {
+    dom.topbarProviderTag.textContent = activeModel.split("/").pop() || activeModel;
+    dom.topbarProviderTag.title = `Active Provider: ${data.active_provider.toUpperCase()} | Model: ${activeModel}`;
+  }
+  if (dom.sidebarModelId) {
+    dom.sidebarModelId.textContent = `[${isOllama ? 'Local' : 'Cloud'}] ${activeModel.split("/").pop() || activeModel}`;
+  }
+}
+
+async function handleSwitchProvider(targetProvider) {
+  try {
+    const data = await api("/api/provider", {
+      method: "POST",
+      body: JSON.stringify({ provider: targetProvider }),
+    });
+    state.providerStatus = data;
+    state.activeProvider = data.active_provider;
+    updateProviderUI(data);
+    await checkHealth();
+  } catch (err) {
+    alert("Failed to switch provider: " + err.message);
+  }
+}
+
 async function checkHealth() {
   try {
     const data = await api("/api/health");
     state.health = data;
-    dom.sidebarModelId.textContent = data.model_id.split("/").pop() || data.model_id;
+    if (data.provider) {
+      state.activeProvider = data.provider;
+    }
+    const modelName = data.model_id.split("/").pop() || data.model_id;
+    if (dom.sidebarModelId) {
+      dom.sidebarModelId.textContent = `[${data.provider === 'ollama' ? 'Local' : 'Cloud'}] ${modelName}`;
+    }
+    if (dom.topbarProviderTag) {
+      dom.topbarProviderTag.textContent = modelName;
+    }
     
     if (data.is_ready) {
       dom.systemStatusBadge.querySelector(".status-dot").className = "status-dot ready";
-      dom.systemStatusText.textContent = "Ready (Nebius Connected)";
+      const provLabel = data.provider === "ollama" ? "Local Nemotron Ready" : "Cloud Ready";
+      dom.systemStatusText.textContent = `Ready (${provLabel})`;
     } else {
       dom.systemStatusBadge.querySelector(".status-dot").className = "status-dot";
-      dom.systemStatusText.textContent = data.has_api_key ? "Degraded" : "API Key Required";
+      if (data.provider === "ollama") {
+        dom.systemStatusText.textContent = data.provider_status === "offline" ? "Ollama Offline" : "Model Missing";
+      } else {
+        dom.systemStatusText.textContent = data.has_api_key ? "Degraded" : "API Key Required";
+      }
     }
+    refreshProviderStatus();
   } catch (err) {
     dom.systemStatusBadge.querySelector(".status-dot").className = "status-dot";
     dom.systemStatusText.textContent = "Offline";
@@ -471,7 +557,9 @@ function showThinkingIndicator(initialText = "Reasoning & operating...") {
 
   const steps = [
     "Consulting persistent local memory...",
-    "Executing NVIDIA Nemotron reasoning...",
+    state.activeProvider === "ollama" 
+      ? "Executing local NVIDIA Nemotron (Ollama) reasoning..." 
+      : "Executing cloud NVIDIA Nemotron reasoning...",
     "Evaluating workspace security directives...",
     "Formulating response..."
   ];
@@ -520,6 +608,7 @@ dom.chatForm.addEventListener("submit", async (e) => {
       conversation_id: state.activeConversationId,
       project_id: state.activeProjectId,
       skill_id: state.activeSkillId || null,
+      provider: state.activeProvider || null,
     };
 
     const res = await api("/api/chat", {
@@ -897,6 +986,14 @@ function setupEventListeners() {
       activateSkill(skillId, pill.textContent);
     });
   });
+
+  // Dual-Provider Switcher Buttons
+  if (dom.btnProviderOllama) {
+    dom.btnProviderOllama.addEventListener("click", () => handleSwitchProvider("ollama"));
+  }
+  if (dom.btnProviderCloud) {
+    dom.btnProviderCloud.addEventListener("click", () => handleSwitchProvider("cloud"));
+  }
 
   // Quick review banner
   dom.btnQuickReview.addEventListener("click", () => {
