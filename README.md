@@ -1,8 +1,8 @@
 # Aegis AI — Private Personal AI Operator
 
-[![Version](https://img.shields.io/badge/version-0.5.0-A78BFA.svg)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.6.0-A78BFA.svg)](pyproject.toml)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-57%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-66%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
 [![Theme](https://img.shields.io/badge/design-Obsidian%20%26%20Electric%20Violet-101116.svg)](frontend/styles.css)
 
@@ -10,12 +10,13 @@
 1. **Local Inference**: Powered by **NVIDIA Nemotron 3.5 Bolt E4B** running locally on your hardware via **Ollama** (`http://127.0.0.1:11434`).
 2. **Cloud Inference**: Powered by **NVIDIA Nemotron** via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`).
 
-It combines a distinctive **Obsidian, Graphite, Platinum, and Electric Violet design identity** with a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
+It combines a distinctive **Obsidian, Graphite, Platinum, and Electric Violet design identity** with **native SSE token streaming**, a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
 
 ---
 
 ## Key Capabilities
 
+- **Native Server-Sent Events (SSE) Token Streaming**: Real-time token streaming from local Ollama (`stream: true`) and cloud models (`stream=True`) through `POST /api/chat/stream`. Features client-side chunk decoding via `ReadableStream`, a realistic blinking streaming cursor (`.streaming-cursor`), intelligent auto-scroll locking, active stream cancellation via `#btnStop` and `Escape`, and automatic fallback protection.
 - **Obsidian & Electric Violet Design System**: A bespoke software developer identity built on Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`), Platinum text (`#E6E4EC`), and Electric Violet accents (`#A78BFA`). Features crisp hairline borders (`#292B32`) and high-contrast WCAG-compliant typography without generic card clutter.
 - **Physics-Based Motion System**: Fluid, restrained interaction system governed by centralized physics tokens (`--ease-out`, `--duration-fast/normal/slow`). Includes smooth fade-and-rise hero entrance, staggered suggestion chip animations (`60ms`, `110ms`, `160ms`, `210ms`), micro-interaction press scaling (`scale(0.98)`), active navigation indicators, and full `@media (prefers-reduced-motion: reduce)` support.
 - **Pure Geometric SVG Iconography**: Zero platform-dependent emojis. Every interface action, suggestion chip, memory badge, and approval tag uses crisp, bespoke inline SVGs with uniform stroke geometry.
@@ -210,18 +211,18 @@ node tests/test_markdown_renderer.js
 Expected output:
 ```
 ============================= test session starts =============================
-collected 46 items
-tests\test_approvals.py ..                                               [  4%]
-tests\test_audit.py ..                                                   [  8%]
-tests\test_chat.py ......                                                [ 21%]
-tests\test_frontend.py ......                                            [ 34%]
-tests\test_health.py ..                                                  [ 39%]
-tests\test_llm.py ....                                                   [ 47%]
-tests\test_memory.py ....                                                [ 56%]
-tests\test_projects.py ..                                                [ 60%]
-tests\test_provider.py ............                                      [ 86%]
+collected 55 items
+tests\test_approvals.py ..                                               [  3%]
+tests\test_audit.py ..                                                   [  7%]
+tests\test_chat.py ..........                                            [ 25%]
+tests\test_frontend.py .......                                           [ 38%]
+tests\test_health.py ..                                                  [ 41%]
+tests\test_llm.py .......                                                [ 54%]
+tests\test_memory.py ....                                                [ 61%]
+tests\test_projects.py ..                                                [ 65%]
+tests\test_provider.py .............                                     [ 89%]
 tests\test_workspace.py ......                                           [100%]
-============================= 46 passed in 2.45s ==============================
+============================= 55 passed in 2.52s ==============================
 
 --- Running Aegis AI Markdown & Syntax Highlighter Tests ---
 ✓ Safe URL sanitizer tests passed

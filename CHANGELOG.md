@@ -4,6 +4,42 @@ All notable changes to **Aegis AI** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-10-30
+
+### Added
+- **Native Server-Sent Events (SSE) Token Streaming**:
+  - Added `POST /api/chat/stream` endpoint returning `StreamingResponse(media_type="text/event-stream")` with anti-buffering headers.
+  - Implemented `LLMService.generate_stream(...)` providing native chunked streaming for both local Ollama HTTP API (`stream: true`) and cloud OpenAI SDK (`stream=True`).
+  - Maintained strict provider isolation: local Ollama streaming failures never trigger silent cloud fallback.
+  - Implemented `AgentService.process_chat_stream(...)` delivering incremental SSE events:
+    - Live tokens: `data: {"token": "...", "done": false}\n\n`
+    - Final completion: `data: {"done": true, "conversation_id": "...", "assistant_message": "...", "pending_approvals": [...], "retrieved_memories": [...]}\n\n`
+    - Sanitized errors: `data: {"error": "...", "done": true, ...}\n\n`
+  - Refactored proposal extraction into `AgentService._parse_actions_and_format` ensuring 100% parity between streaming and non-streaming modes for `PROPOSE_PATCH`, `PROPOSE_COMMAND`, and `PROPOSE_TASK`.
+- **Client-Side Incremental Token Renderer (`frontend/app.js`)**:
+  - Implemented `ReadableStream` reader with `TextDecoder("utf-8")` parsing SSE chunks in real time.
+  - Reusable streaming bubble helper `createStreamingMessageRow` with clean Obsidian-themed DOM structure.
+  - Authentic blinking block cursor (`.streaming-cursor` with `@keyframes streamBlink`) and `.stream-content` presentation.
+  - Seamless finalization: removes cursor upon completion, executes `renderSafeMarkdown`, highlights code syntax, and attaches action buttons (Copy, Retry).
+- **Intelligent Viewport Auto-Scroll Lock**:
+  - Automatically scrolls to the bottom if the user is already within 160px of the bottom.
+  - Preserves scroll position without jumpiness if the user scrolls up to inspect previous code or thoughts.
+- **Active Stream Cancellation & Generator Cleanup**:
+  - Terminating stream via `#btnStop` or `Escape` key signals `AbortController` and halts the HTTP stream.
+  - Backend generator catches `GeneratorExit` on client disconnection and persists partial response to SQLite with `*(Generation stopped by user)*`.
+- **Automatic Fallback Protection**:
+  - If `/api/chat/stream` fails or is blocked by network proxies, `app.js` automatically falls back to non-streaming `/api/chat`.
+- **Expanded Automated Test Suite**:
+  - Added unit and HTTP integration tests for SSE stream generation in `tests/test_chat.py`.
+  - Added Ollama streaming tests in `tests/test_provider.py` and Cloud streaming tests in `tests/test_llm.py`.
+  - Added frontend streaming assets verification in `tests/test_frontend.py`.
+  - Total automated tests increased from 57 to 66 (55 Python + 11 JavaScript) with 100% pass rate.
+
+### Changed
+- Bumped application version to `0.6.0` in `app/__init__.py` and `pyproject.toml`.
+
+---
+
 ## [0.5.0] — 2026-10-30
 
 ### Added

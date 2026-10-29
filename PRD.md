@@ -1,6 +1,6 @@
 # Aegis AI — Product Requirements Document (PRD)
 
-**Document Version:** 0.5.0  
+**Document Version:** 0.6.0  
 **Status:** Approved / Active Baseline  
 **Date:** 2026-10-30  
 **System Name:** Aegis AI Operator  
@@ -138,7 +138,16 @@ Centralized in `frontend/styles.css` `:root`:
 
 ## 8. Current Release Scope & Roadmap
 
-### In Scope (v0.5.0 — Delivered)
+### In Scope (v0.6.0 — Delivered)
+- **Native Server-Sent Events (SSE) Token Streaming**:
+  - `POST /api/chat/stream` delivering real-time chunked tokens.
+  - Native streaming integration with local Ollama HTTP API (`stream: true`) and cloud OpenAI SDK (`stream=True`).
+  - Zero silent fallback: strict provider isolation enforced on streaming failures.
+  - Client-side incremental token renderer in `app.js` with `ReadableStream` reader and `TextDecoder`.
+  - Realistic blinking streaming cursor (`.streaming-cursor`) with smooth completion transition to formatted Markdown.
+  - Viewport auto-scroll lock: auto-scrolls when user is near the bottom (<=160px), preserves position when scrolled up.
+  - Active stream cancellation: `#btnStop` and `Escape` key immediately abort stream and halt backend generator.
+  - Automatic fallback: gracefully degrades to `/api/chat` if streaming endpoint is unavailable.
 - Distinctive Obsidian, Graphite, Platinum, and Electric Violet design system.
 - Cohesive physics-based motion system (`--ease-out`, `--duration-fast/normal/slow`).
 - Clean bespoke geometric SVGs replacing all decorative emoji glyphs.
@@ -146,11 +155,10 @@ Centralized in `frontend/styles.css` `:root`:
 - Safe Markdown sanitizer blocking XSS and invalid URLs.
 - Message actions: copy response, copy code, retry prompt, stop generation.
 - Responsive table overflow wrappers and nested list hierarchies.
-- 57 automated tests (46 Python + 11 JavaScript) with 100% pass rate.
+- 66 automated tests (55 Python + 11 JavaScript) with 100% pass rate.
 - Complete synchronized documentation suite.
 
-### Future Roadmap (v0.6.0+)
-- **Server-Sent Events (SSE) Streaming**: Native incremental token streaming from Ollama and cloud providers without breaking non-streaming fallback.
+### Future Roadmap (v0.7.0+)
 - **Tree-sitter Syntax Highlighting**: Optional WebAssembly-based AST highlighting for deeper semantic colorization.
 - **Multi-File Workspace Diffs**: Interactive multi-tab diff viewer for large refactorings touching dozens of files.
 - **Offline Embeddings Vector Search**: Local SQLite-vec integration for dense retrieval in place of keyword-based memory matching.

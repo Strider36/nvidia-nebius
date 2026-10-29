@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import json
 import re
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from app.config import settings
 from app.database import get_db_connection
 from app.models import (
@@ -280,6 +280,49 @@ class AgentService:
             )
 
         # 6. Parse Action Proposals from LLM response (supports single & multiple)
+        cleaned_reply, all_pending_approvals = AgentService._parse_actions_and_format(
+            raw_reply, req.project_id
+        )
+
+        # 7. Persist Assistant message to DB
+        asst_msg_id = str(uuid.uuid4())
+        primary_approval_id = all_pending_approvals[0].id if all_pending_approvals else None
+        with get_db_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO messages (id, conversation_id, role, content, skill_id, retrieved_memories, pending_approval_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    asst_msg_id,
+                    conv_id,
+                    "assistant",
+                    cleaned_reply.strip(),
+                    req.skill_id,
+                    json.dumps(mem_dicts),
+                    primary_approval_id,
+                    now,
+                ),
+            )
+            conn.execute("UPDATE conversations SET updated_at = ? WHERE id = ?", (now, conv_id))
+
+        pending_approval_dict = all_pending_approvals[0].model_dump() if all_pending_approvals else None
+        pending_approvals_list = [a.model_dump() for a in all_pending_approvals] if all_pending_approvals else None
+
+        return ChatResponse(
+            conversation_id=conv_id,
+            assistant_message=cleaned_reply.strip(),
+            retrieved_memories=mem_dicts,
+            pending_approval=pending_approval_dict,
+            pending_approvals=pending_approvals_list,
+            is_error=False,
+        )
+
+    @staticmethod
+    def _parse_actions_and_format(
+        raw_reply: str, project_id: Optional[str]
+    ) -> Tuple[str, List[ApprovalResponse]]:
+        """Parse action proposals (patch, command, task) and replace with clean markdown badges."""
         all_pending_approvals: List[ApprovalResponse] = []
         cleaned_reply = raw_reply
 
@@ -362,7 +405,7 @@ class AgentService:
                     details={
                         "title": task_title,
                         "description": task_desc,
-                        "project_id": req.project_id,
+                        "project_id": project_id,
                         "due_date": task_due,
                     },
                     reason="AI-suggested task addition",
@@ -380,8 +423,153 @@ class AgentService:
             return f"\n\n> 📋 **Milestone Task:** **{title}**{due_badge}{desc_body}"
 
         cleaned_reply = task_pattern.sub(format_task_replacement, cleaned_reply)
+        return cleaned_reply, all_pending_approvals
+
+    @staticmethod
+    def process_chat_stream(req: ChatRequest) -> Iterator[str]:
+        """Process chat turn with real-time SSE token streaming."""
+        now = datetime.now(timezone.utc).isoformat()
+
+        # Ensure conversation exists
+        conv_id = req.conversation_id
+        if not conv_id:
+            conv = AgentService.create_conversation(
+                title=req.message[:30] + ("..." if len(req.message) > 30 else ""),
+                project_id=req.project_id,
+            )
+            conv_id = conv.id
+        else:
+            conv = AgentService.get_conversation(conv_id)
+            if not conv:
+                conv = AgentService.create_conversation(
+                    title=req.message[:30] + ("..." if len(req.message) > 30 else ""),
+                    project_id=req.project_id,
+                )
+                conv_id = conv.id
+
+        # 1. Retrieve relevant persistent memories
+        retrieved_mems = memory_service.retrieve_relevant_memories(
+            query=req.message,
+            project_id=req.project_id,
+            limit=4,
+        )
+        mem_dicts = [m.model_dump() for m in retrieved_mems]
+
+        # 2. Build system prompt with Skill & Memories
+        system_sections = [SYSTEM_BASE_PROMPT]
+
+        if req.skill_id:
+            skill = skill_service.get_skill(req.skill_id)
+            if skill:
+                system_sections.append(
+                    f"\n--- ACTIVE SKILL: {skill.name} ---\n"
+                    f"Purpose: {skill.purpose}\n"
+                    f"Permitted Tools: {', '.join(skill.permitted_tools)}\n\n"
+                    f"Skill Instructions:\n{skill.instructions}\n"
+                )
+
+        if retrieved_mems:
+            mem_summary = "\n".join(
+                f"- [{m.category.value}] {m.content}" for m in retrieved_mems
+            )
+            system_sections.append(
+                f"\n--- RELEVANT RETRIEVED MEMORIES (READ-ONLY CONTEXT) ---\n{mem_summary}\n"
+            )
+
+        system_prompt = "\n".join(system_sections)
+
+        # 3. Save User message to DB
+        user_msg_id = str(uuid.uuid4())
+        with get_db_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO messages (id, conversation_id, role, content, skill_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (user_msg_id, conv_id, "user", req.message, req.skill_id, now),
+            )
+
+        # 4. Fetch recent conversation history
+        conv_obj = AgentService.get_conversation(conv_id)
+        history_msgs = []
+        if conv_obj and conv_obj.messages:
+            for m in conv_obj.messages[-8:]:
+                history_msgs.append({"role": m.role, "content": m.content})
+        else:
+            history_msgs.append({"role": "user", "content": req.message})
+
+        # 5. Call LLM Streaming with per-request provider isolation
+        target_provider = (
+            req.provider.lower()
+            if req.provider and req.provider.lower() in ("ollama", "cloud")
+            else None
+        ) or settings.get_provider_snapshot()
+
+        accumulated_raw = ""
+        try:
+            for token in llm_service.generate_stream(
+                messages=history_msgs,
+                system_prompt=system_prompt,
+                provider=target_provider,
+            ):
+                accumulated_raw += token
+                yield f"data: {json.dumps({'token': token, 'done': False})}\n\n"
+        except GeneratorExit:
+            # Client disconnected or cancelled stream early
+            if accumulated_raw.strip():
+                cleaned_partial, _ = AgentService._parse_actions_and_format(accumulated_raw, req.project_id)
+                exit_now = datetime.now(timezone.utc).isoformat()
+                asst_msg_id = str(uuid.uuid4())
+                with get_db_connection() as conn:
+                    conn.execute(
+                        """
+                        INSERT INTO messages (id, conversation_id, role, content, skill_id, retrieved_memories, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            asst_msg_id,
+                            conv_id,
+                            "assistant",
+                            f"{cleaned_partial.strip()}\n\n*(Generation stopped by user)*",
+                            req.skill_id,
+                            json.dumps(mem_dicts),
+                            exit_now,
+                        ),
+                    )
+                    conn.execute("UPDATE conversations SET updated_at = ? WHERE id = ?", (exit_now, conv_id))
+            return
+        except Exception as e:
+            error_msg = str(e) or "Inference stream failed."
+            err_now = datetime.now(timezone.utc).isoformat()
+            asst_msg_id = str(uuid.uuid4())
+            notice_text = f"⚠️ Aegis AI Operational Notice: {error_msg}"
+            with get_db_connection() as conn:
+                conn.execute(
+                    """
+                    INSERT INTO messages (id, conversation_id, role, content, skill_id, retrieved_memories, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        asst_msg_id,
+                        conv_id,
+                        "assistant",
+                        notice_text,
+                        req.skill_id,
+                        json.dumps(mem_dicts),
+                        err_now,
+                    ),
+                )
+                conn.execute("UPDATE conversations SET updated_at = ? WHERE id = ?", (err_now, conv_id))
+            yield f"data: {json.dumps({'error': error_msg, 'done': True, 'conversation_id': conv_id, 'assistant_message': notice_text})}\n\n"
+            return
+
+        # 6. Parse Action Proposals from accumulated response
+        cleaned_reply, all_pending_approvals = AgentService._parse_actions_and_format(
+            accumulated_raw, req.project_id
+        )
 
         # 7. Persist Assistant message to DB
+        done_now = datetime.now(timezone.utc).isoformat()
         asst_msg_id = str(uuid.uuid4())
         primary_approval_id = all_pending_approvals[0].id if all_pending_approvals else None
         with get_db_connection() as conn:
@@ -398,22 +586,15 @@ class AgentService:
                     req.skill_id,
                     json.dumps(mem_dicts),
                     primary_approval_id,
-                    now,
+                    done_now,
                 ),
             )
-            conn.execute("UPDATE conversations SET updated_at = ? WHERE id = ?", (now, conv_id))
+            conn.execute("UPDATE conversations SET updated_at = ? WHERE id = ?", (done_now, conv_id))
 
         pending_approval_dict = all_pending_approvals[0].model_dump() if all_pending_approvals else None
         pending_approvals_list = [a.model_dump() for a in all_pending_approvals] if all_pending_approvals else None
 
-        return ChatResponse(
-            conversation_id=conv_id,
-            assistant_message=cleaned_reply.strip(),
-            retrieved_memories=mem_dicts,
-            pending_approval=pending_approval_dict,
-            pending_approvals=pending_approvals_list,
-            is_error=False,
-        )
+        yield f"data: {json.dumps({'done': True, 'conversation_id': conv_id, 'assistant_message': cleaned_reply.strip(), 'retrieved_memories': mem_dicts, 'pending_approval': pending_approval_dict, 'pending_approvals': pending_approvals_list})}\n\n"
 
 
 agent_service = AgentService()

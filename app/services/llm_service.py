@@ -7,7 +7,7 @@ strict isolation (no silent fallbacks), and sanitized error handling.
 """
 
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 import httpx
 import openai
 from openai import OpenAI
@@ -125,6 +125,51 @@ class LLMService:
             )
         else:
             return self._generate_cloud(
+                messages=messages,
+                system_prompt=system_prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+
+    def generate_stream(
+        self,
+        messages: List[Dict[str, str]],
+        system_prompt: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.2,
+        provider: Optional[str] = None,
+    ) -> Iterator[str]:
+        """Generate response stream from the selected model provider yielding token deltas.
+
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'.
+            system_prompt: Optional system prompt to inject.
+            max_tokens: Maximum tokens to generate.
+            temperature: Sampling temperature.
+            provider: Optional explicit provider override ('ollama' or 'cloud').
+
+        Yields:
+            String token chunks in real-time as received from inference runtime.
+            Strict isolation: Local failures never trigger silent cloud fallbacks.
+        """
+        target_provider = provider or self.provider
+        if not target_provider:
+            if self._explicit_key:
+                target_provider = "cloud"
+            else:
+                target_provider = settings.get_provider_snapshot()
+
+        clean_provider = target_provider.strip().lower()
+
+        if clean_provider == "ollama":
+            yield from self._generate_stream_ollama(
+                messages=messages,
+                system_prompt=system_prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+        else:
+            yield from self._generate_stream_cloud(
                 messages=messages,
                 system_prompt=system_prompt,
                 max_tokens=max_tokens,
@@ -307,6 +352,153 @@ class LLMService:
             return None, f"API Error: {str(e)}."
         except Exception as e:
             return None, f"Unexpected Model Error: {str(e)}."
+
+    def _generate_stream_ollama(
+        self,
+        messages: List[Dict[str, str]],
+        system_prompt: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.2,
+    ) -> Iterator[str]:
+        """Execute streaming local inference against Ollama /api/chat endpoint."""
+        if not self.ollama_base_url:
+            self.ollama_base_url = settings.ollama_base_url.rstrip("/")
+        if not self.ollama_model:
+            self.ollama_model = settings.ollama_model
+
+        if not self.ollama_base_url or not self.ollama_model:
+            raise RuntimeError(
+                "Ollama is not configured. Please set OLLAMA_BASE_URL and OLLAMA_MODEL in your .env file."
+            )
+
+        payload_messages = self._prepare_payload_messages(messages, system_prompt)
+        token_limit = min(max_tokens or settings.max_output_tokens, settings.max_output_tokens)
+
+        request_body = {
+            "model": self.ollama_model,
+            "messages": payload_messages,
+            "stream": True,
+            "options": {
+                "temperature": temperature,
+                "num_predict": token_limit,
+            },
+        }
+
+        url = f"{self.ollama_base_url}/api/chat"
+        client_timeout = httpx.Timeout(self.ollama_timeout, connect=5.0)
+
+        try:
+            with httpx.Client(timeout=client_timeout) as client:
+                with client.stream("POST", url, json=request_body) as resp:
+                    if resp.status_code == 404:
+                        raise RuntimeError(
+                            f"Model Not Found: Model '{self.ollama_model}' not found in Ollama at {self.ollama_base_url}. Pull it using 'ollama pull {self.ollama_model}'."
+                        )
+                    if resp.is_error:
+                        detail = ""
+                        try:
+                            err_json = resp.json()
+                            detail = err_json.get("error", resp.text[:200])
+                        except Exception:
+                            detail = resp.text[:200]
+                        raise RuntimeError(f"Ollama HTTP Error {resp.status_code}: {detail}")
+
+                    for line in resp.iter_lines():
+                        if not line:
+                            continue
+                        try:
+                            data = json.loads(line)
+                        except Exception:
+                            continue
+
+                        msg = data.get("message", {})
+                        token = msg.get("content", "")
+                        if not token and "thinking" in msg:
+                            token = msg.get("thinking", "")
+                        if token:
+                            yield token
+                        if data.get("done", False):
+                            break
+
+        except httpx.ConnectError:
+            raise RuntimeError(
+                f"Connection Error: Unable to reach Ollama at {self.ollama_base_url}. Ensure Ollama service is running."
+            )
+        except httpx.ConnectTimeout:
+            raise RuntimeError(
+                f"Connection Timeout: Could not connect to Ollama at {self.ollama_base_url} within 5.0s."
+            )
+        except (httpx.ReadTimeout, httpx.WriteTimeout, httpx.PoolTimeout):
+            raise RuntimeError(
+                f"Request Timeout: Ollama inference exceeded {self.ollama_timeout}s timeout limit."
+            )
+        except httpx.HTTPError as e:
+            raise RuntimeError(f"Ollama HTTP Error: {str(e)}.")
+
+    def _generate_stream_cloud(
+        self,
+        messages: List[Dict[str, str]],
+        system_prompt: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.2,
+    ) -> Iterator[str]:
+        """Execute streaming cloud inference using OpenAI-compatible SDK (Nebius/OpenRouter)."""
+        if not self._explicit_key and not self.api_key and settings.api_key:
+            self.api_key = settings.api_key
+            self.base_url = settings.base_url
+            self.model_id = settings.model_id
+            self._init_client()
+
+        if not (self._client is not None and bool(self.api_key)):
+            raise RuntimeError(
+                "LLM API key is not configured. Please set OPENROUTER_API_KEY or NEBIUS_API_KEY in your .env file."
+            )
+
+        token_limit = min(max_tokens or settings.max_output_tokens, settings.max_output_tokens)
+        payload_messages = self._prepare_payload_messages(messages, system_prompt)
+
+        def _call_model_stream(target_model: str):
+            return self._client.chat.completions.create(
+                model=target_model,
+                messages=payload_messages,
+                max_tokens=token_limit,
+                temperature=temperature,
+                stream=True,
+            )
+
+        try:
+            target_model = self.model_id
+            try:
+                stream_resp = _call_model_stream(target_model)
+            except openai.NotFoundError as nf_err:
+                if ":free" in target_model:
+                    fallback_model = target_model.replace(":free", "")
+                    stream_resp = _call_model_stream(fallback_model)
+                else:
+                    raise nf_err
+
+            for chunk in stream_resp:
+                if chunk.choices and len(chunk.choices) > 0:
+                    delta = chunk.choices[0].delta
+                    content = getattr(delta, "content", None) or getattr(delta, "reasoning", None) or ""
+                    if content:
+                        yield content
+
+        except openai.AuthenticationError as e:
+            raise RuntimeError(f"Authentication Error: Invalid API key or unauthorized access ({str(e)}).")
+        except openai.RateLimitError as e:
+            raise RuntimeError(f"Rate Limit Exceeded: Quota or rate limit exceeded ({str(e)}).")
+        except openai.APITimeoutError:
+            raise RuntimeError(f"Request Timeout: Inference exceeded {self.timeout}s limit.")
+        except openai.APIConnectionError as e:
+            raise RuntimeError(f"Connection Error: Unable to reach endpoint at {self.base_url} ({str(e)}).")
+        except openai.APIError as e:
+            raise RuntimeError(f"API Error: {str(e)}.")
+        except Exception as e:
+            if isinstance(e, RuntimeError):
+                raise
+            raise RuntimeError(f"Unexpected Model Error: {str(e)}.")
+
 
 
 # Global singleton instance

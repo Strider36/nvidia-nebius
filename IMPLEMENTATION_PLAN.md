@@ -1,8 +1,8 @@
 # Aegis AI — Implementation Plan & Roadmap
 
-**Current Release:** v0.5.0  
+**Current Release:** v0.6.0  
 **Baseline Date:** 2026-10-30  
-**Status:** Milestones 1–5 Completed; Milestone 6 Planned  
+**Status:** Milestones 1–6 Completed; Milestone 7 Planned  
 
 ---
 
@@ -56,11 +56,13 @@ Aegis AI uses an incremental, additive engineering methodology designed to deliv
                                            |
                                            v
 +---------------------------------------------------------------------------------------+
-|  MILESTONE 6 (v0.6.0) - Native Token Streaming & Advanced Tooling [PLANNED]          |
+|  MILESTONE 6 (v0.6.0) - Native Token Streaming & Advanced Tooling [COMPLETED]        |
 |  - Server-Sent Events (SSE) streaming endpoint (/api/chat/stream)                     |
-|  - Incremental response token rendering with auto-scroll lock preservation             |
-|  - Multi-file unified diff staging viewer in workspace tab                            |
-|  - Dense semantic retrieval via SQLite-vec / local embedding models                   |
+|  - Real-time token streaming from local Ollama & Cloud OpenAI SDK                     |
+|  - Client-side ReadableStream reader with authentic blinking cursor                   |
+|  - Auto-scroll lock: auto-scrolls at bottom (<=160px), preserves position on scroll   |
+|  - Real streaming cancellation (AbortController halting stream & generator)           |
+|  - 66 automated tests (55 Python + 11 JavaScript) with 100% pass rate                |
 +---------------------------------------------------------------------------------------+
 ```
 
@@ -113,17 +115,27 @@ Aegis AI uses an incremental, additive engineering methodology designed to deliv
 
 ---
 
+### Milestone 6: Native Token Streaming & Advanced Tooling (v0.6.0) — [COMPLETED]
+- [x] Backend SSE Streaming Endpoint: `POST /api/chat/stream` delivering `text/event-stream`.
+- [x] Ollama Native Streaming: Yielding chunks via Ollama's HTTP API (`stream: true`).
+- [x] Cloud Native Streaming: Yielding delta chunks from the OpenAI SDK client (`stream=True`).
+- [x] Client-side Incremental Token Renderer in `frontend/app.js`: Consuming `ReadableStream` with `TextDecoder`.
+- [x] Authentic blinking block cursor (`.streaming-cursor` with `@keyframes streamBlink`) and `.stream-content`.
+- [x] Viewport Auto-Scroll Lock: Auto-scrolling when user is within 160px of bottom, freezing scroll position if user scrolls up.
+- [x] Real Streaming Cancellation: Terminating the active stream and backend generator on `#btnStop` click or `Escape` key (`AbortController`).
+- [x] Non-Streaming Fallback Preservation: Keeping `POST /api/chat` fully working and backward-compatible.
+- [x] 66 automated tests (55 Python + 11 JavaScript) with 100% pass rate.
+
+---
+
 ## 3. Planned Milestones & Remaining Work
 
-### Milestone 6: Native Token Streaming & Advanced Tooling (v0.6.0) — [PLANNED]
-- **Objective**: Deliver real-time incremental token streaming without breaking the existing request/response contract.
+### Milestone 7: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.7.0) — [PLANNED]
+- **Objective**: Enhance code AST inspection and integrate dense embedding vector search.
 - **Tasks**:
-  1. *Backend SSE Endpoint*: Implement `POST /api/chat/stream` using FastAPI `StreamingResponse` and Ollama streaming API (`stream: true`).
-  2. *Cloud Streaming*: Stream chunks from OpenAI-compatible cloud client asynchronously.
-  3. *Client-side Incremental Renderer*: Buffer incoming tokens, update the active message DOM node, and run lightweight syntax highlighting without full-document layout shift.
-  4. *Smart Auto-Scroll*: Auto-scroll downwards while user is at the bottom of the viewport; freeze scroll position if user scrolls up to review prior content.
-  5. *Streaming Cancellation*: Terminate backend generation immediately upon receiving client abort signal.
-  6. *Fallback Preservation*: Retain `/api/chat` non-streaming endpoint for CLI and low-bandwidth use cases.
+  1. *Tree-sitter WASM Highlighting*: Optional WebAssembly-based AST highlighting for deeper semantic colorization.
+  2. *Multi-File Workspace Diffs*: Interactive multi-tab diff viewer for large refactorings touching dozens of files.
+  3. *Dense Semantic Retrieval*: Local SQLite-vec integration for dense retrieval in place of keyword-based memory matching.
 
 ---
 

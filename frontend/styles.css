@@ -1059,6 +1059,29 @@ body {
   word-break: break-word;
 }
 
+/* Live Token Streaming Presentation */
+.stream-content {
+  display: inline;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 15px;
+  background-color: var(--accent-primary);
+  margin-left: 3px;
+  vertical-align: -2px;
+  border-radius: 1px;
+  animation: streamBlink 0.8s infinite;
+}
+
+@keyframes streamBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 /* Assistant Response Actions Bar (Copy / Retry) */
 .message-actions-bar {
   display: flex;

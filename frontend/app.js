@@ -1110,11 +1110,70 @@ function abortCurrentRequest() {
   if (currentAbortController) {
     currentAbortController.abort();
     currentAbortController = null;
-    showToast("Generation cancelled", "error");
+    showToast("Generation stopped", "info");
   }
 }
 
-// Chat Form Submission
+// Helper to create an active streaming message row in DOM
+function createStreamingMessageRow(skillId) {
+  const row = document.createElement("div");
+  row.className = "message-row assistant";
+
+  const meta = document.createElement("div");
+  meta.className = "message-meta";
+  meta.innerHTML = `
+    <span class="message-role assistant">Aegis AI</span>
+    <span>Just now</span>
+    ${skillId ? `<span class="badge badge-muted">${escapeHtml(skillId)}</span>` : ""}
+  `;
+  row.appendChild(meta);
+
+  // Container for memories if returned in stream
+  const memoriesContainer = document.createElement("div");
+  memoriesContainer.className = "stream-memories-holder";
+  row.appendChild(memoriesContainer);
+
+  const bubble = document.createElement("div");
+  bubble.className = "message-bubble";
+
+  const contentEl = document.createElement("span");
+  contentEl.className = "stream-content";
+
+  const cursorEl = document.createElement("span");
+  cursorEl.className = "streaming-cursor";
+
+  bubble.appendChild(contentEl);
+  bubble.appendChild(cursorEl);
+  row.appendChild(bubble);
+
+  dom.messagesContainer.appendChild(row);
+
+  return { row, bubble, contentEl, cursorEl, memoriesContainer };
+}
+
+function createMessageActionsBar() {
+  const bar = document.createElement("div");
+  bar.className = "message-actions-bar";
+  bar.innerHTML = `
+    <button type="button" class="btn-msg-action btn-copy-response" onclick="handleCopyAssistantMessage(this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      <span>Copy</span>
+    </button>
+    <button type="button" class="btn-msg-action btn-retry" onclick="handleRetryLastMessage()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 4v6h-6"></path>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+      <span>Retry</span>
+    </button>
+  `;
+  return bar;
+}
+
+// Chat Form Submission (Native SSE Token Streaming with Auto-Scroll & Fallback)
 dom.chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const text = dom.messageInput.value.trim();
@@ -1131,13 +1190,21 @@ dom.chatForm.addEventListener("submit", async (e) => {
 
   dom.messageInput.value = "";
   dom.messageInput.style.height = "auto";
-  
+
   // Switch Send to Stop button
   dom.btnSend.style.display = "none";
   if (dom.btnStop) dom.btnStop.style.display = "flex";
 
   const removeThinking = showThinkingIndicator();
   currentAbortController = new AbortController();
+
+  let streamRow = null;
+  let streamBubble = null;
+  let streamContentEl = null;
+  let streamCursorEl = null;
+  let memoriesContainer = null;
+  let accumulatedRaw = "";
+  let finalData = null;
 
   try {
     const payload = {
@@ -1148,48 +1215,197 @@ dom.chatForm.addEventListener("submit", async (e) => {
       provider: state.activeProvider || null,
     };
 
-    const res = await api("/api/chat", {
-      method: "POST",
-      body: JSON.stringify(payload),
-      signal: currentAbortController.signal,
-    });
+    let streamResponse = null;
+    let streamFailed = false;
 
-    removeThinking();
-    state.activeConversationId = res.conversation_id;
+    try {
+      streamResponse = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: currentAbortController.signal,
+      });
 
-    // Render assistant message
-    appendMessageToDom({
-      role: "assistant",
-      content: res.assistant_message,
-      retrieved_memories: res.retrieved_memories,
-      skill_id: state.activeSkillId,
-      created_at: new Date().toISOString(),
-    });
-
-    // If action(s) were proposed, render approval cards directly
-    if (res.pending_approvals && res.pending_approvals.length > 0) {
-      res.pending_approvals.forEach(appr => renderApprovalCardInMessage(appr));
-      refreshPendingApprovals();
-    } else if (res.pending_approval) {
-      renderApprovalCardInMessage(res.pending_approval);
-      refreshPendingApprovals();
+      if (!streamResponse.ok) {
+        streamFailed = true;
+      }
+    } catch (netErr) {
+      if (netErr.name === "AbortError" || currentAbortController.signal.aborted) {
+        throw netErr;
+      }
+      streamFailed = true;
     }
 
-    loadConversations(dom.conversationSearchInput.value.trim());
+    if (streamFailed || !streamResponse || !streamResponse.body) {
+      // Graceful fallback to non-streaming /api/chat
+      const res = await api("/api/chat", {
+        method: "POST",
+        body: JSON.stringify(payload),
+        signal: currentAbortController.signal,
+      });
+
+      removeThinking();
+      state.activeConversationId = res.conversation_id;
+
+      appendMessageToDom({
+        role: "assistant",
+        content: res.assistant_message,
+        retrieved_memories: res.retrieved_memories,
+        skill_id: state.activeSkillId,
+        created_at: new Date().toISOString(),
+      });
+
+      if (res.pending_approvals && res.pending_approvals.length > 0) {
+        res.pending_approvals.forEach(appr => renderApprovalCardInMessage(appr));
+        refreshPendingApprovals();
+      } else if (res.pending_approval) {
+        renderApprovalCardInMessage(res.pending_approval);
+        refreshPendingApprovals();
+      }
+
+      loadConversations(dom.conversationSearchInput.value.trim());
+      return;
+    }
+
+    // Stream SSE consumption
+    const reader = streamResponse.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let sseBuffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      sseBuffer += decoder.decode(value, { stream: true });
+      const lines = sseBuffer.split("\n");
+      sseBuffer = lines.pop(); // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const jsonStr = trimmed.slice(5).trim();
+        if (!jsonStr) continue;
+
+        let data = null;
+        try {
+          data = JSON.parse(jsonStr);
+        } catch (e) {
+          continue;
+        }
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        if (data.token) {
+          if (!streamRow) {
+            removeThinking();
+            const created = createStreamingMessageRow(state.activeSkillId);
+            streamRow = created.row;
+            streamBubble = created.bubble;
+            streamContentEl = created.contentEl;
+            streamCursorEl = created.cursorEl;
+            memoriesContainer = created.memoriesContainer;
+          }
+
+          accumulatedRaw += data.token;
+          streamContentEl.textContent = accumulatedRaw;
+
+          // Auto-scroll lock: only auto-scroll if user is near the bottom
+          const isNearBottom = dom.messagesContainer.scrollHeight - dom.messagesContainer.scrollTop - dom.messagesContainer.clientHeight < 160;
+          if (isNearBottom) {
+            dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+          }
+        }
+
+        if (data.done) {
+          finalData = data;
+        }
+      }
+    }
+
+    // Stream finished successfully
+    removeThinking();
+
+    if (streamRow && streamBubble) {
+      if (streamCursorEl) streamCursorEl.remove();
+
+      // Render formatted safe Markdown with syntax highlighting
+      const finalText = (finalData && finalData.assistant_message) ? finalData.assistant_message : accumulatedRaw;
+      streamBubble.innerHTML = renderSafeMarkdown(finalText);
+      streamBubble.appendChild(createMessageActionsBar());
+
+      // If retrieved memories were sent, populate memories pill
+      if (finalData && finalData.retrieved_memories && finalData.retrieved_memories.length > 0 && memoriesContainer) {
+        memoriesContainer.innerHTML = `
+          <div class="retrieved-memories-pill" title="Relevant memories retrieved from SQLite">
+            <span class="mem-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mem-icon" style="vertical-align:-2px; margin-right:4px;"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>Memories Applied:</span>
+            ${finalData.retrieved_memories.map(rm => `<strong>[${escapeHtml(rm.category)}]</strong> ${escapeHtml(rm.content.substring(0, 45))}...`).join(" | ")}
+          </div>
+        `;
+      }
+
+      // If actions were proposed, render approval cards directly
+      if (finalData && finalData.pending_approvals && finalData.pending_approvals.length > 0) {
+        finalData.pending_approvals.forEach(appr => renderApprovalCardInMessage(appr));
+        refreshPendingApprovals();
+      } else if (finalData && finalData.pending_approval) {
+        renderApprovalCardInMessage(finalData.pending_approval);
+        refreshPendingApprovals();
+      }
+
+      if (finalData && finalData.conversation_id) {
+        state.activeConversationId = finalData.conversation_id;
+        loadConversations(dom.conversationSearchInput.value.trim());
+      }
+
+      // Auto-scroll lock check at completion
+      const isNearBottom = dom.messagesContainer.scrollHeight - dom.messagesContainer.scrollTop - dom.messagesContainer.clientHeight < 160;
+      if (isNearBottom) {
+        dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+      }
+    } else if (finalData) {
+      // Completed without tokens (e.g. empty or direct metadata)
+      appendMessageToDom({
+        role: "assistant",
+        content: finalData.assistant_message || "(Empty response)",
+        retrieved_memories: finalData.retrieved_memories,
+        skill_id: state.activeSkillId,
+        created_at: new Date().toISOString(),
+      });
+      if (finalData.conversation_id) {
+        state.activeConversationId = finalData.conversation_id;
+        loadConversations(dom.conversationSearchInput.value.trim());
+      }
+    }
   } catch (err) {
     removeThinking();
-    if (err.name === "AbortError" || (err.message && err.message.toLowerCase().includes("abort"))) {
-      appendMessageToDom({
-        role: "assistant",
-        content: "*Generation cancelled by user.*",
-        created_at: new Date().toISOString(),
-      });
+    const isAborted = err.name === "AbortError" || (err.message && err.message.toLowerCase().includes("abort"));
+
+    if (isAborted) {
+      if (streamRow && streamBubble) {
+        if (streamCursorEl) streamCursorEl.remove();
+        streamBubble.innerHTML = renderSafeMarkdown(accumulatedRaw) + `\n\n<div class="text-muted mt-2" style="font-size:0.8rem; font-style:italic;">— Generation stopped by user</div>`;
+        streamBubble.appendChild(createMessageActionsBar());
+      } else {
+        appendMessageToDom({
+          role: "assistant",
+          content: "*Generation stopped by user.*",
+          created_at: new Date().toISOString(),
+        });
+      }
     } else {
-      appendMessageToDom({
-        role: "assistant",
-        content: `⚠️ Communication Error: ${err.message}`,
-        created_at: new Date().toISOString(),
-      });
+      if (streamRow && streamBubble) {
+        if (streamCursorEl) streamCursorEl.remove();
+        streamBubble.innerHTML = renderSafeMarkdown(accumulatedRaw) + `\n\n<div class="banner-alert mt-2" style="display:flex;">⚠️ Operational Notice: ${escapeHtml(err.message)}</div>`;
+        streamBubble.appendChild(createMessageActionsBar());
+      } else {
+        appendMessageToDom({
+          role: "assistant",
+          content: `⚠️ Aegis AI Operational Notice: ${err.message}`,
+          created_at: new Date().toISOString(),
+        });
+      }
     }
   } finally {
     currentAbortController = null;
@@ -1628,6 +1844,13 @@ function setupEventListeners() {
   if (dom.btnCloseApprovalPanel) {
     dom.btnCloseApprovalPanel.addEventListener("click", () => {
       dom.pendingApprovalsPanel.style.display = "none";
+    });
+  }
+
+  // Stop Generation button
+  if (dom.btnStop) {
+    dom.btnStop.addEventListener("click", () => {
+      abortCurrentRequest();
     });
   }
 

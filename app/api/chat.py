@@ -2,6 +2,7 @@
 
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from app.models import (
     ChatRequest,
     ChatResponse,
@@ -18,6 +19,20 @@ router = APIRouter(prefix="/api", tags=["chat"])
 def chat_turn(req: ChatRequest) -> ChatResponse:
     """Send a message to Aegis AI and receive a structured response."""
     return agent_service.process_chat(req)
+
+
+@router.post("/chat/stream")
+def chat_turn_stream(req: ChatRequest):
+    """Send a message to Aegis AI and stream token chunks in real-time via SSE."""
+    return StreamingResponse(
+        agent_service.process_chat_stream(req),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get("/conversations", response_model=List[ConversationResponse])

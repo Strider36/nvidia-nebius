@@ -1,6 +1,6 @@
 # Aegis AI — Task Tracker & Backlog
 
-**Version Baseline:** 0.5.0  
+**Version Baseline:** 0.6.0  
 **Last Updated:** 2026-10-30  
 **Status Key:**  
 - `[DONE]` Completed, verified with automated tests, and documented.
@@ -79,13 +79,25 @@
 
 ---
 
-## 6. Milestone 6: Native Token Streaming & Advanced Tooling (v0.6.0 — Planned)
+## 6. Milestone 6: Native Token Streaming & Advanced Tooling (v0.6.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
-| **TASK-601** | Backend SSE streaming endpoint | High | `[PLANNED]` | None | `POST /api/chat/stream` delivering `text/event-stream` tokens from active provider. |
-| **TASK-602** | Ollama async token generator | High | `[PLANNED]` | TASK-601 | Consume Ollama HTTP streaming payload chunk-by-chunk without blocking the event loop. |
-| **TASK-603** | Cloud OpenAI async token generator | High | `[PLANNED]` | TASK-601 | Stream chunks from Nebius/OpenRouter using `stream=True`. |
-| **TASK-604** | Client incremental token renderer | High | `[PLANNED]` | TASK-601 | Append incoming tokens smoothly to active assistant turn; debounce syntax highlighting. |
-| **TASK-605** | Smart viewport auto-scroll lock | Medium | `[PLANNED]` | TASK-604 | Automatically scroll if user is within 160px of bottom; freeze position if user scrolls up. |
-| **TASK-606** | Server-side stream cancellation handler | High | `[PLANNED]` | TASK-601 | Cancel backend inference loop immediately when client disconnects or aborts. |
+| **TASK-601** | Backend SSE streaming endpoint | High | `[DONE]` | None | `POST /api/chat/stream` delivering `text/event-stream` tokens from active provider with anti-buffering headers. |
+| **TASK-602** | Ollama native token generator | High | `[DONE]` | TASK-601 | Consume Ollama HTTP streaming payload chunk-by-chunk via `stream: true` in `LLMService._generate_stream_ollama`. |
+| **TASK-603** | Cloud OpenAI native token generator | High | `[DONE]` | TASK-601 | Stream chunks from Nebius/OpenRouter using `stream=True` in `LLMService._generate_stream_cloud`. |
+| **TASK-604** | Client incremental token renderer | High | `[DONE]` | TASK-601 | Append incoming tokens smoothly to active assistant turn with authentic blinking cursor (`.streaming-cursor`). |
+| **TASK-605** | Smart viewport auto-scroll lock | Medium | `[DONE]` | TASK-604 | Automatically scroll if user is within 160px of bottom; freeze position if user scrolls up. |
+| **TASK-606** | Server-side stream cancellation handler | High | `[DONE]` | TASK-601 | Handle `GeneratorExit` on client abort, persist partial response to SQLite with `*(Generation stopped by user)*`. |
+| **TASK-607** | Streaming regression test suite | High | `[DONE]` | All v0.6.0 | Added 9 new tests across `test_chat.py`, `test_llm.py`, `test_provider.py`, `test_frontend.py` (66 tests total). |
+
+---
+
+## 7. Milestone 7: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.7.0 — Planned)
+
+| Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
+|---|---|:---:|:---:|---|---|
+| **TASK-701** | Tree-sitter WebAssembly grammar integration | Medium | `[PLANNED]` | None | AST-based token coloring for deeper semantic highlighting. |
+| **TASK-702** | Multi-file workspace diff staging viewer | High | `[PLANNED]` | None | Multi-tab diff viewer in workspace modal for complex refactorings. |
+| **TASK-703** | Dense vector search via local embeddings | High | `[PLANNED]` | None | Embeddings stored in SQLite-vec alongside keyword matching. |
+

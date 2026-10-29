@@ -168,4 +168,100 @@ def test_conversation_rename_endpoint(temp_chat_env):
     assert get_res.json()["title"] == "Updated Title"
 
 
+def test_chat_stream_tokens_and_completion_event(temp_chat_env):
+    """Verify process_chat_stream yields SSE token chunks and final metadata event."""
+    import json
+
+    with patch("app.services.agent_service.llm_service.generate_stream") as mock_stream:
+        mock_stream.return_value = iter(["Hello ", "from ", "streaming!"])
+
+        events = list(agent_service.process_chat_stream(
+            ChatRequest(message="Test streaming")
+        ))
+
+        # Check events
+        assert len(events) == 4  # 3 tokens + 1 final completion event
+        token_data_0 = json.loads(events[0].replace("data: ", "").strip())
+        assert token_data_0["token"] == "Hello "
+        assert token_data_0["done"] is False
+
+        token_data_1 = json.loads(events[1].replace("data: ", "").strip())
+        assert token_data_1["token"] == "from "
+
+        token_data_2 = json.loads(events[2].replace("data: ", "").strip())
+        assert token_data_2["token"] == "streaming!"
+
+        final_data = json.loads(events[3].replace("data: ", "").strip())
+        assert final_data["done"] is True
+        assert final_data["assistant_message"] == "Hello from streaming!"
+        assert "conversation_id" in final_data
+
+
+def test_chat_stream_endpoint_http(temp_chat_env):
+    """Verify HTTP POST /api/chat/stream returns text/event-stream and valid SSE."""
+    import json
+    from fastapi.testclient import TestClient
+    from main import app
+
+    client = TestClient(app)
+
+    with patch("app.services.agent_service.llm_service.generate_stream") as mock_stream:
+        mock_stream.return_value = iter(["SSE ", "stream ", "active."])
+
+        res = client.post("/api/chat/stream", json={"message": "Stream HTTP test"})
+        assert res.status_code == 200
+        assert "text/event-stream" in res.headers["content-type"]
+        assert "SSE" in res.text
+        assert "stream active." in res.text
+        assert '"done": true' in res.text
+
+
+def test_chat_stream_proposals_parsing(temp_chat_env):
+    """Verify action proposals inside streamed tokens are extracted and approvals created."""
+    import json
+
+    tokens = [
+        "I propose ",
+        "creating a config:\n",
+        '<<<PROPOSE_PATCH path="app_config.json" reason="App settings" risk="New file">\n',
+        '{"debug": true}\n',
+        "</PROPOSE_PATCH>>>\n",
+        "Please review."
+    ]
+
+    with patch("app.services.agent_service.llm_service.generate_stream") as mock_stream:
+        mock_stream.return_value = iter(tokens)
+
+        events = list(agent_service.process_chat_stream(
+            ChatRequest(message="Configure the app")
+        ))
+
+        final_data = json.loads(events[-1].replace("data: ", "").strip())
+        assert final_data["done"] is True
+        assert "<<<PROPOSE_PATCH" not in final_data["assistant_message"]
+        assert "Proposed Code Modification" in final_data["assistant_message"]
+        assert final_data["pending_approval"] is not None
+        assert final_data["pending_approval"]["target"] == "app_config.json"
+
+
+def test_chat_stream_error_handling(temp_chat_env):
+    """Verify errors raised during stream yield SSE error event and persist notice."""
+    import json
+
+    with patch("app.services.agent_service.llm_service.generate_stream") as mock_stream:
+        mock_stream.side_effect = RuntimeError("Ollama service unreachable on 127.0.0.1:11434")
+
+        events = list(agent_service.process_chat_stream(
+            ChatRequest(message="Trigger stream error")
+        ))
+
+        assert len(events) == 1
+        err_data = json.loads(events[0].replace("data: ", "").strip())
+        assert err_data["done"] is True
+        assert "error" in err_data
+        assert "unreachable" in err_data["error"]
+        assert "⚠️ Aegis AI Operational Notice" in err_data["assistant_message"]
+
+
+
 

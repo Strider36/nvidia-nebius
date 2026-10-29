@@ -114,6 +114,33 @@ def test_ollama_reasoning_fallback_extraction():
         assert text == "Step 1: Check memory. Step 2: Formulate answer."
 
 
+def test_ollama_streaming_inference():
+    """Verify local streaming inference streams tokens line-by-line via stream=True."""
+    service = LLMService(
+        provider="ollama",
+        ollama_base_url="http://127.0.0.1:11434",
+        ollama_model="nemotron-3.5-bolt:e4b",
+    )
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.is_error = False
+    mock_resp.iter_lines.return_value = [
+        '{"message": {"content": "Local "}, "done": false}',
+        '{"message": {"content": "Nemotron "}, "done": false}',
+        '{"message": {"content": "streaming."}, "done": true}',
+    ]
+
+    mock_stream_ctx = MagicMock()
+    mock_stream_ctx.__enter__.return_value = mock_resp
+    mock_stream_ctx.__exit__.return_value = None
+
+    with patch("httpx.Client.stream", return_value=mock_stream_ctx):
+        tokens = list(service.generate_stream([{"role": "user", "content": "Stream test"}], provider="ollama"))
+        assert tokens == ["Local ", "Nemotron ", "streaming."]
+
+
+
 # --- 2. Ollama Error Handling ---
 
 def test_ollama_missing_model_404():

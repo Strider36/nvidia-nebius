@@ -123,6 +123,23 @@ def test_frontend_obsidian_violet_design_system_and_motion():
     assert "chipEntrance" in css_res.text
 
 
+def test_frontend_streaming_assets():
+    """Verify v0.6.0 native SSE token streaming assets and DOM handlers are present."""
+    css_res = client.get("/styles.css")
+    assert css_res.status_code == 200
+    assert ".stream-content" in css_res.text
+    assert ".streaming-cursor" in css_res.text
+    assert "streamBlink" in css_res.text
+
+    js_res = client.get("/app.js")
+    assert js_res.status_code == 200
+    assert "createStreamingMessageRow" in js_res.text
+    assert "createMessageActionsBar" in js_res.text
+    assert "/api/chat/stream" in js_res.text
+    assert "abortCurrentRequest" in js_res.text
+
+
+
 
 
 

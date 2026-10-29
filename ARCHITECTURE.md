@@ -1,6 +1,6 @@
 # Aegis AI — System Architecture Document
 
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Status:** Approved & Current Baseline  
 **Date:** 2026-10-30  
 
@@ -9,7 +9,7 @@
 ## 1. Executive Summary
 
 Aegis AI is a privacy-first, developer-centric personal AI operator and autonomous coding assistant built around three foundational pillars:
-1. **Dual-Provider Inference with Strict Isolation**: Seamlessly switch between zero-data-leakage local inference via **Ollama** (`http://127.0.0.1:11434`) running **NVIDIA Nemotron 3.5 Bolt E4B** and high-throughput cloud inference via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`). Under no circumstances is local code or conversation silently routed to the cloud.
+1. **Dual-Provider Inference with Strict Isolation & Native Streaming**: Seamlessly switch between zero-data-leakage local inference via **Ollama** (`http://127.0.0.1:11434`) running **NVIDIA Nemotron 3.5 Bolt E4B** and high-throughput cloud inference via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`). Supports native real-time SSE token streaming (`POST /api/chat/stream`) and strict isolation with zero silent fallbacks.
 2. **Human-in-the-Loop Security & Workspace Sandboxing**: All file modifications and shell executions are sandboxed inside `./workspace` (or configured `AEGIS_WORKSPACE`). Automatic timestamped backups are generated in `.aegis_backups/`, and every patch or allowlisted test runner command requires explicit human review and approval.
 3. **Obsidian & Electric Violet Design System & Motion Physics**: Distinctive developer-first design identity built on Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`), Platinum text (`#E6E4EC`), and Electric Violet accents (`#A78BFA`). Features crisp hairline borders (`#292B32`), bespoke geometric SVG icons (zero emoji glyphs), a zero-dependency multi-language syntax highlighter, resilient Markdown parsing, true client-side cancellation via `AbortController`, and a cohesive physics-based motion system (`--ease-out`).
 
@@ -22,21 +22,22 @@ Aegis AI is a privacy-first, developer-centric personal AI operator and autonomo
 |                                              BROWSER CLIENT                                           |
 |                                                                                                       |
 |  +---------------------------+  +-------------------------------+  +-------------------------------+  |
-|  | Graphite Collapsible Bar  |  | Centered Reading Stream       |  | Response & Motion System      |  |
-|  | - Realtime Search & Date  |  | - 48rem Focused Column        |  | - Zero-Dep Syntax Highlighting|  |
-|  | - Grouped History Items   |  | - Obsidian/Graphite Surfaces  |  | - Safe Markdown & Tables     |  |
-|  | - Mobile Off-Canvas Drawer|  | - Bespoke Geometric SVG Icons |  | - Electric Violet Accents     |  |
+|  | Graphite Collapsible Bar  |  | Centered Reading Stream       |  | Streaming & Motion System     |  |
+|  | - Realtime Search & Date  |  | - 48rem Focused Column        |  | - Native SSE Token Decoding   |  |
+|  | - Grouped History Items   |  | - Obsidian/Graphite Surfaces  |  | - Auto-Scroll Lock (<=160px)  |  |
+|  | - Mobile Off-Canvas Drawer|  | - Bespoke Geometric SVG Icons |  | - Blinking Cursor & Markdown  |  |
 |  +---------------------------+  +-------------------------------+  | - AbortController (#btnStop)  |  |
 |                                                                    +-------------------------------+  |
 +-------------------------------------------------------------------------------------------------------+
                                                    |
-                                                   | HTTP REST / JSON
+                                                   | HTTP REST / SSE (text/event-stream)
                                                    v
 +-------------------------------------------------------------------------------------------------------+
 |                                           FASTAPI BACKEND SERVICE                                     |
 |                                                                                                       |
 |  API Routers:                                                                                         |
-|  - /api/chat        -> Chat orchestrator, session history, memory injection, approval tag parser     |
+|  - /api/chat/stream -> Real-time chunked SSE token generator with client disconnect handling           |
+|  - /api/chat        -> Non-streaming chat orchestrator, history, memory injection, approval parsing  |
 |  - /api/provider    -> Runtime provider switching, connectivity health probes, model status tags      |
 |  - /api/health      -> System readiness, DB connection, sanitized provider health probes              |
 |  - /api/approvals   -> Human approval lifecycle engine (PROPOSED -> APPROVED -> EXECUTED)             |

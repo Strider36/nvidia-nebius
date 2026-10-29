@@ -1,8 +1,8 @@
 # Aegis AI — Comprehensive Testing Guide & Verification Suite
 
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Last Updated:** 2026-10-30  
-**Status:** 100% Passing (57/57 Automated Tests)  
+**Status:** 100% Passing (66/66 Automated Tests)  
 
 ---
 
@@ -12,7 +12,7 @@ All unit, integration, and security tests in Aegis AI adhere to five strict test
 1. **Deterministic & Offline**: Tests execute without internet access. Cloud endpoints are mocked via OpenAI client fixtures, and local Ollama calls are mocked via `httpx` transport fixtures.
 2. **Persistent DB Isolation**: Each test run uses an isolated in-memory or temporary throwaway SQLite database (`tempfile.TemporaryDirectory`) ensuring zero state leakage between tests.
 3. **Dual-Stack Verification**: Tests validate both the Python backend application (via `pytest` and `fastapi.testclient.TestClient`) and the client-side JavaScript rendering engine (via Node.js `node:vm` harness).
-4. **Design System & Invariant Regression**: Dedicated assertions confirm the presence of all centralized Obsidian & Electric Violet tokens, motion system keyframes, and geometric SVG iconography.
+4. **Design System & Invariant Regression**: Dedicated assertions confirm the presence of all centralized Obsidian & Electric Violet tokens, motion system keyframes, geometric SVG iconography, and SSE streaming assets.
 5. **Anti-Fallback & Security Checks**: Automated assertions verify that local inference failures never trigger silent cloud fallbacks, path traversal attempts are rejected, and secrets are redacted from logs.
 
 ---
@@ -32,21 +32,21 @@ pip install -r requirements.txt
 
 ## 3. Test Suites & Coverage Breakdown
 
-### 3.1 Python Backend Test Suite (`pytest` — 46 Tests)
+### 3.1 Python Backend Test Suite (`pytest` — 55 Tests)
 
 | Test Module | Focus Area | Tested Invariants | Test Count |
 |---|---|---|:---:|
-| [`tests/test_provider.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_provider.py) | Dual-Provider Inference | Ollama HTTP payload, 404 model missing, timeouts, connection errors, runtime switching, per-request isolation, anti-fallback invariant | 12 |
-| [`tests/test_llm.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_llm.py) | Cloud Provider Client | OpenAI SDK compatibility, authentication errors, quota limits, unconfigured fallback | 4 |
-| [`tests/test_chat.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_chat.py) | Chat Orchestration | Session history, memory context injection, proposal parsing (`<<<PROPOSE_PATCH>>>`, `<<<PROPOSE_COMMAND>>>`, `<<<PROPOSE_TASK>>>`), conversation rename endpoint | 6 |
+| [`tests/test_provider.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_provider.py) | Dual-Provider Inference | Ollama HTTP payload, streaming tokens (`stream: true`), 404 model missing, timeouts, connection errors, runtime switching, per-request isolation, anti-fallback invariant | 13 |
+| [`tests/test_llm.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_llm.py) | Cloud Provider Client | OpenAI SDK compatibility, incremental token streaming (`stream=True`), auth errors, quota limits, unconfigured fallback | 7 |
+| [`tests/test_chat.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_chat.py) | Chat Orchestration & SSE Streaming | Session history, memory context injection, proposal parsing (`<<<PROPOSE_PATCH>>>`, `<<<PROPOSE_COMMAND>>>`, `<<<PROPOSE_TASK>>>`), `/api/chat/stream` SSE tokens and completion, conversation rename endpoint | 10 |
 | [`tests/test_approvals.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_approvals.py) | Approval Lifecycle | State machine transitions (`PROPOSED -> PENDING_APPROVAL -> APPROVED -> EXECUTING -> SUCCEEDED / REJECTED`), execution safety | 2 |
 | [`tests/test_workspace.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_workspace.py) | Workspace Sandboxing | Path canonicalization, traversal blocking (`../`), unified diff computation, timestamped pre-modification backups | 6 |
 | [`tests/test_memory.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_memory.py) | Persistent SQLite Memory | Memory CRUD, keyword index retrieval, secret shield blocking credentials at gateway | 4 |
 | [`tests/test_projects.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_projects.py) | Projects & Backlog | Project creation, milestone task tracking, status updates | 2 |
 | [`tests/test_health.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_health.py) | Health & Readiness | Health probe payload, non-blocking DB and provider connectivity, secret non-leakage | 2 |
 | [`tests/test_audit.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_audit.py) | Audit Trail Persistence | Audit logging to SQLite, automatic secret token scrubbing in logs | 2 |
-| [`tests/test_frontend.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_frontend.py) | Static Assets & UI | Asset serving (`index.html`, `styles.css`, `app.js`), suggestion chips, `#btnStop`, `#toastContainer`, `highlightSyntax`, `.tok-keyword`, and v0.5.0 design tokens & motion system | 6 |
-| **Python Total** | | | **46** |
+| [`tests/test_frontend.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_frontend.py) | Static Assets & UI | Asset serving (`index.html`, `styles.css`, `app.js`), suggestion chips, `#btnStop`, `#toastContainer`, `highlightSyntax`, `.tok-keyword`, v0.5.0 design tokens & motion system, v0.6.0 streaming DOM assets | 7 |
+| **Python Total** | | | **55** |
 
 ### 3.2 Frontend Markdown & Syntax Test Suite (`node` — 11 Tests)
 
@@ -65,7 +65,7 @@ pip install -r requirements.txt
 | **Test 11** | Unclosed Code Block Recovery | Verifies dangling/streaming code blocks close cleanly without layout corruption. |
 | **Frontend Total** | | **11** |
 
-**Grand Total Automated Tests:** **57 Tests** (46 Python + 11 JavaScript)
+**Grand Total Automated Tests:** **66 Tests** (55 Python + 11 JavaScript)
 
 ---
 
@@ -97,20 +97,20 @@ platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
 rootdir: E:\Code Tresure\nvidia-nebius-main\nvidia-nebius-main
 configfile: pyproject.toml
 plugins: anyio-4.14.2, langsmith-0.11.1
-collected 46 items
+collected 55 items
 
-tests\test_approvals.py ..                                               [  4%]
-tests\test_audit.py ..                                                   [  8%]
-tests\test_chat.py ......                                                [ 21%]
-tests\test_frontend.py ......                                            [ 34%]
-tests\test_health.py ..                                                  [ 39%]
-tests\test_llm.py ....                                                   [ 47%]
-tests\test_memory.py ....                                                [ 56%]
-tests\test_projects.py ..                                                [ 60%]
-tests\test_provider.py ............                                      [ 86%]
+tests\test_approvals.py ..                                               [  3%]
+tests\test_audit.py ..                                                   [  7%]
+tests\test_chat.py ..........                                            [ 25%]
+tests\test_frontend.py .......                                           [ 38%]
+tests\test_health.py ..                                                  [ 41%]
+tests\test_llm.py .......                                                [ 54%]
+tests\test_memory.py ....                                                [ 61%]
+tests\test_projects.py ..                                                [ 65%]
+tests\test_provider.py .............                                     [ 89%]
 tests\test_workspace.py ......                                           [100%]
 
-============================= 46 passed in 2.45s ==============================
+============================= 55 passed in 2.52s ==============================
 ```
 
 ### 5.2 Node.js Test Session (`node tests/test_markdown_renderer.js`)
@@ -141,3 +141,5 @@ The test suite includes dedicated regression tests for critical invariants:
 4. **Command Allowlist Enforcement (`test_approvals.py:test_disallowed_command`)**: Commands outside `pytest`, `python -m unittest`, and `npm test` are rejected during approval execution.
 5. **Secret Shield (`test_memory.py:test_secret_redaction`)**: Passwords, API tokens, and private keys submitted via prompts are scrubbed before storage in SQLite.
 6. **XSS & Protocol Hijack Blocking (`test_markdown_renderer.js`)**: Injected `<script>` tags and `javascript:` URIs are neutralized during Markdown sanitization.
+7. **Native SSE Token Streaming & Abort Resilience (`test_chat.py:test_chat_stream_tokens_and_completion_event`)**: Validates that chunked token events and completion metadata arrive in standard SSE format, that mid-stream proposals are parsed cleanly, and that client abort triggers immediate backend generator cleanup without corrupting history.
+
