@@ -1,6 +1,6 @@
 # Aegis AI — Product Requirements Document (PRD)
 
-**Document Version:** 0.8.0  
+**Document Version:** 0.8.1  
 **Status:** Approved / Active Baseline  
 **Date:** 2026-10-30  
 **System Name:** Aegis AI Operator  

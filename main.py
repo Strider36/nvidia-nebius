@@ -8,6 +8,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
+from app import __version__
 from app.config import get_resource_path, settings
 from app.database import init_db
 from app.api.health import router as health_router
@@ -37,7 +38,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Aegis AI",
     description="Private Personal AI Operator with Persistent Memory, Safe Workspace, and Approvals",
-    version="0.1.0",
+    version=__version__,
     lifespan=lifespan,
 )
 

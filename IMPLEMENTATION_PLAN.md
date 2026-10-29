@@ -1,8 +1,8 @@
 # Aegis AI — Implementation Plan & Roadmap
 
-**Current Release:** v0.8.0  
+**Current Release:** v0.8.1  
 **Baseline Date:** 2026-10-30  
-**Status:** Milestones 1–8 Completed; Milestone 9 Planned  
+**Status:** Milestones 1–9 Completed; Milestone 10 Planned  
 
 ---
 
@@ -181,6 +181,17 @@ Aegis AI uses an incremental, additive engineering methodology designed to deliv
 - [x] Diagnostic Route: Added `GET /api/hermes/status` checking binary presence, version, and provider readiness.
 - [x] Automated Test Suite: Added `tests/test_hermes.py` (8 test cases) and frontend regression test in `tests/test_frontend.py`.
 - [x] 76 automated tests (65 Python + 11 JavaScript) with 100% pass rate.
+
+---
+
+### Milestone 9: Full-System Optimization, Reliability & Verification (v0.8.1) — [COMPLETED]
+- [x] Full Repository Audit: Audited backend routers, SQLite pragmas, subprocess execution, Hermes integration, and frontend client.
+- [x] FastAPI Version Synchronization: Bound `FastAPI(..., version=__version__)` to `app.__version__` (`0.8.1`), eliminating version drift across API docs.
+- [x] Subprocess Windows Character Encoding Resilience: Added explicit `encoding="utf-8", errors="replace"` across `hermes_service.py` and `workspace_service.py` to prevent Windows `cp1252` encoding crashes on LLM emoji outputs.
+- [x] Subprocess Timeout & Stream Cleanup Hardening: Implemented safe communicate timeouts and client disconnect tracking (`GeneratorExit`).
+- [x] Workspace Sandboxing & Backup Verification: Verified path traversal defenses, symlink resolution, `.aegis_backups` automated pre-modification snapshots, and allowlisted test execution inside sandboxed `./workspace`.
+- [x] End-to-End Test Suite: Added `tests/test_e2e_live.py` (4 tests) covering metadata sync, secret-free provider inspection, and complete multi-step human approval lifecycle.
+- [x] 80 automated tests (69 Python + 11 JavaScript) with 100% pass rate.
 
 ---
 

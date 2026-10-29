@@ -4,6 +4,25 @@ All notable changes to **Aegis AI** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] — 2026-10-30
+
+### Fixed & Optimized
+- **FastAPI Version Synchronization**:
+  - Dynamically bound FastAPI application metadata `version` in `main.py` to `app.__version__` (`0.8.1`), eliminating version drift between application components, health checks, and OpenAPI docs.
+- **Windows Encoding Resilience & Crash Prevention**:
+  - Hardened all subprocess interactions (`hermes_service.py` and `workspace_service.py`) with explicit `encoding="utf-8"` and `errors="replace"`.
+  - Prevented Windows `cp1252` code page crashes when LLMs (e.g. Nemotron) or workspace test runners output Unicode characters, emojis, or ANSI terminal formatting.
+- **Subprocess Timeout & Process Leak Mitigation**:
+  - Resolved potential stream iteration blocks in Hermes Agent communication by integrating safe timeout accounting, client disconnect tracking (`GeneratorExit`), and rigorous process termination.
+- **Workspace Security & Sandbox Integrity**:
+  - Verified path traversal defenses, symlink resolution, `.aegis_backups` automated pre-modification snapshots, and allowlisted test execution inside sandboxed `./workspace`.
+- **End-to-End Test Matrix & Verification**:
+  - Added `tests/test_e2e_live.py` covering application startup, provider inspection without secret leakage, Hermes status, and full multi-stage human approval lifecycle (proposal -> approval -> patch -> backup -> audit log).
+  - Validated local Ollama `nemotron-3.5-bolt:e4b` inference and Hermes Agent CLI execution.
+  - Test suite now stands at 80 passing tests (69 Python + 11 Node) with 100% pass rate.
+
+---
+
 ## [0.8.0] — 2026-10-30
 
 ### Added

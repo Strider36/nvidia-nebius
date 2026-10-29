@@ -150,6 +150,8 @@ class WorkspaceService:
                 cwd=str(workspace_root),
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=20.0,
                 shell=False,
             )

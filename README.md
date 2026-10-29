@@ -1,8 +1,8 @@
 # Aegis AI — Private Personal AI Operator
 
-[![Version](https://img.shields.io/badge/version-0.8.0-A78BFA.svg)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.8.1-A78BFA.svg)](pyproject.toml)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-76%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-80%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
 [![Theme](https://img.shields.io/badge/design-Unified%20Obsidian%20%26%20Electric%20Violet-101116.svg)](frontend/styles.css)
 
@@ -214,7 +214,7 @@ Aegis AI lets you switch both the inference provider and the agent reasoning bac
 
 All tests execute deterministically and require **zero API credits**.
 
-### Run Full Verification (Python + Node.js — 76 Tests):
+### Run Full Verification (Python + Node.js — 80 Tests):
 ```bash
 python -m pytest; node tests/test_markdown_renderer.js
 ```
@@ -233,19 +233,20 @@ Expected output:
 ```
 ============================= test session starts =============================
 platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
-collected 65 items
-tests\test_approvals.py ..                                               [  3%]
-tests\test_audit.py ..                                                   [  6%]
-tests\test_chat.py ..........                                            [ 21%]
-tests\test_frontend.py .........                                         [ 35%]
-tests\test_health.py ..                                                  [ 38%]
-tests\test_hermes.py ........                                            [ 50%]
-tests\test_llm.py .......                                                [ 61%]
-tests\test_memory.py ....                                                [ 67%]
-tests\test_projects.py ..                                                [ 70%]
-tests\test_provider.py .............                                     [ 90%]
+collected 69 items
+tests\test_approvals.py ..                                               [  2%]
+tests\test_audit.py ..                                                   [  5%]
+tests\test_chat.py ..........                                            [ 20%]
+tests\test_e2e_live.py ....                                              [ 26%]
+tests\test_frontend.py .........                                         [ 39%]
+tests\test_health.py ..                                                  [ 42%]
+tests\test_hermes.py ........                                            [ 53%]
+tests\test_llm.py .......                                                [ 63%]
+tests\test_memory.py ....                                                [ 69%]
+tests\test_projects.py ..                                                [ 72%]
+tests\test_provider.py .............                                     [ 91%]
 tests\test_workspace.py ......                                           [100%]
-============================= 65 passed in 6.42s ==============================
+============================= 69 passed in 3.77s ==============================
 
 --- Running Aegis AI Markdown & Syntax Highlighter Tests ---
 ✓ Safe URL sanitizer tests passed

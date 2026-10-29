@@ -1,6 +1,6 @@
 # Aegis AI — Task Tracker & Backlog
 
-**Version Baseline:** 0.8.0  
+**Version Baseline:** 0.8.1  
 **Last Updated:** 2026-10-30  
 **Status Key:**  
 - `[DONE]` Completed, verified with automated tests, and documented.
@@ -9,7 +9,21 @@
 
 ---
 
-## 1. Milestone 8: Hermes Agent Backend Integration (v0.8.0 — Completed)
+## 1. Milestone 9: Full-System Optimization, Reliability & Verification (v0.8.1 — Completed)
+
+| Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
+|---|---|:---:|:---:|---|---|
+| **TASK-901** | Full repository audit & discrepancy identification | Critical | `[DONE]` | None | Completed comprehensive audit of backend routes, Hermes service, subprocess I/O, SQLite layers, and frontend state. |
+| **TASK-902** | FastAPI version metadata synchronization | High | `[DONE]` | TASK-901 | Synchronized `FastAPI(..., version=__version__)` in `main.py` to resolve version drift against `app/__init__.py`. |
+| **TASK-903** | Subprocess Windows character encoding resilience | Critical | `[DONE]` | TASK-901 | Hardened `hermes_service.py` and `workspace_service.py` with `encoding="utf-8", errors="replace"` to prevent Windows cp1252 crash on LLM emojis and unicode output. |
+| **TASK-904** | Subprocess timeout & process termination hardening | Critical | `[DONE]` | TASK-901 | Hardened Hermes process iteration, stream cleanup on disconnect (`GeneratorExit`), and child process termination. |
+| **TASK-905** | Workspace sandbox & backup verification | Critical | `[DONE]` | TASK-901 | Verified path traversal defenses, symlink resolution, `.aegis_backups` automated pre-modification snapshots, and allowlisted test execution inside sandboxed `./workspace`. |
+| **TASK-906** | End-to-end integration & lifecycle test suite | Critical | `[DONE]` | TASK-901 | Added `tests/test_e2e_live.py` (4 tests) covering metadata sync, secret-free provider inspection, and complete multi-step human approval lifecycle. |
+| **TASK-907** | Total automated regression test run | Critical | `[DONE]` | All | Executed 80 automated tests (69 Python + 11 Node) with 100% pass rate. |
+
+---
+
+## 2. Milestone 8: Hermes Agent Backend Integration (v0.8.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|

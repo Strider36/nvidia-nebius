@@ -51,6 +51,7 @@ class HermesService:
                     text=True,
                     timeout=5.0,
                     encoding="utf-8",
+                    errors="replace",
                 )
                 if res.returncode == 0:
                     for line in res.stdout.splitlines():
@@ -182,6 +183,7 @@ class HermesService:
                 stderr=subprocess.PIPE,
                 text=True,
                 encoding="utf-8",
+                errors="replace",
                 cwd=str(settings.workspace_path),
             )
 
@@ -190,41 +192,46 @@ class HermesService:
             start_time = time.time()
 
             try:
-                assert proc.stdout is not None
-                for line in proc.stdout:
-                    if time.time() - start_time > timeout_sec:
-                        proc.terminate()
-                        try:
-                            proc.wait(timeout=2.0)
-                        except subprocess.TimeoutExpired:
-                            proc.kill()
-                        return None, f"Hermes Agent timed out after {timeout_sec:.0f}s."
+                if proc.stdout is not None:
+                    for line in proc.stdout:
+                        if time.time() - start_time > timeout_sec:
+                            proc.terminate()
+                            try:
+                                proc.wait(timeout=2.0)
+                            except Exception:
+                                proc.kill()
+                            return None, f"Hermes Agent timed out after {timeout_sec:.0f}s."
 
-                    line_str = line.strip()
-                    if not line_str:
-                        continue
-                    try:
-                        data = json.loads(line_str)
-                        evt_type = data.get("type")
-                        if evt_type == "text":
-                            tokens.append(data.get("text", ""))
-                        elif evt_type == "result":
-                            final_text = data.get("text")
-                    except Exception:
-                        pass
+                        line_str = line.strip() if isinstance(line, str) else line.decode("utf-8", errors="replace").strip()
+                        if not line_str:
+                            continue
+                        try:
+                            data = json.loads(line_str)
+                            evt_type = data.get("type")
+                            if evt_type == "text":
+                                tokens.append(data.get("text", ""))
+                            elif evt_type == "result":
+                                final_text = data.get("text")
+                        except Exception:
+                            pass
 
                 proc.wait(timeout=5.0)
             except Exception as e:
-                proc.terminate()
+                if hasattr(proc, "terminate"):
+                    proc.terminate()
                 try:
-                    proc.wait(timeout=2.0)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
+                    if hasattr(proc, "wait"):
+                        proc.wait(timeout=2.0)
+                except Exception:
+                    if hasattr(proc, "kill"):
+                        proc.kill()
                 return None, f"Hermes subprocess communication error: {str(e)}"
 
             if proc.returncode != 0:
-                stderr_output = proc.stderr.read() if proc.stderr else ""
-                err_msg = stderr_output.strip() or f"Hermes exited with status {proc.returncode}."
+                stderr_output = ""
+                if proc.stderr and hasattr(proc.stderr, "read"):
+                    stderr_output = proc.stderr.read()
+                err_msg = str(stderr_output).strip() or f"Hermes exited with status {proc.returncode}."
                 # Anti-fallback guarantee: return explicit error
                 return None, f"Hermes execution error: {err_msg}"
 
@@ -279,56 +286,64 @@ class HermesService:
                 stderr=subprocess.PIPE,
                 text=True,
                 encoding="utf-8",
+                errors="replace",
                 cwd=str(settings.workspace_path),
             )
 
             start_time = time.time()
-            assert proc.stdout is not None
+            if proc.stdout is not None:
+                for line in proc.stdout:
+                    if time.time() - start_time > timeout_sec:
+                        proc.terminate()
+                        yield f"\n\n*(Hermes generation timed out after {timeout_sec:.0f}s)*"
+                        return
 
-            for line in proc.stdout:
-                if time.time() - start_time > timeout_sec:
-                    proc.terminate()
-                    yield f"\n\n*(Hermes generation timed out after {timeout_sec:.0f}s)*"
-                    return
-
-                line_str = line.strip()
-                if not line_str:
-                    continue
-                try:
-                    data = json.loads(line_str)
-                    if data.get("type") == "text":
-                        chunk = data.get("text", "")
-                        if chunk:
-                            yield chunk
-                except Exception:
-                    pass
+                    line_str = line.strip() if isinstance(line, str) else line.decode("utf-8", errors="replace").strip()
+                    if not line_str:
+                        continue
+                    try:
+                        data = json.loads(line_str)
+                        if data.get("type") == "text":
+                            chunk = data.get("text", "")
+                            if chunk:
+                                yield chunk
+                    except Exception:
+                        pass
 
             proc.wait(timeout=5.0)
             if proc.returncode != 0:
-                stderr_output = proc.stderr.read() if proc.stderr else ""
-                err_msg = stderr_output.strip() or f"Hermes exited with status {proc.returncode}"
+                stderr_output = ""
+                if proc.stderr and hasattr(proc.stderr, "read"):
+                    stderr_output = proc.stderr.read()
+                err_msg = str(stderr_output).strip() or f"Hermes exited with status {proc.returncode}"
                 yield f"\n\n*(Hermes execution notice: {err_msg})*"
 
         except GeneratorExit:
             # Client disconnected or AbortController fired
             logger.info("Hermes stream aborted by client.")
-            if proc and proc.poll() is None:
-                proc.terminate()
+            if proc and hasattr(proc, "poll") and proc.poll() is None:
+                if hasattr(proc, "terminate"):
+                    proc.terminate()
                 try:
-                    proc.wait(timeout=1.0)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
+                    if hasattr(proc, "wait"):
+                        proc.wait(timeout=1.0)
+                except Exception:
+                    if hasattr(proc, "kill"):
+                        proc.kill()
             raise
         except Exception as e:
             logger.error(f"Hermes stream error: {e}")
             yield f"\n\n*(Hermes stream error: {str(e)})*"
         finally:
-            if proc and proc.poll() is None:
-                proc.terminate()
+            if proc and hasattr(proc, "poll") and proc.poll() is None:
+                if hasattr(proc, "terminate"):
+                    proc.terminate()
                 try:
-                    proc.wait(timeout=1.0)
+                    if hasattr(proc, "wait"):
+                        proc.wait(timeout=1.0)
                 except Exception:
-                    proc.kill()
+                    if hasattr(proc, "kill"):
+                        proc.kill()
             if temp_file and os.path.exists(temp_file):
                 try:
                     os.unlink(temp_file)
