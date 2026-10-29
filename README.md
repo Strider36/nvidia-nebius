@@ -1,22 +1,24 @@
 # Aegis AI — Private Personal AI Operator
 
-[![Version](https://img.shields.io/badge/version-0.4.0-cyan.svg)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.5.0-A78BFA.svg)](pyproject.toml)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-56%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-57%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
-[![Theme](https://img.shields.io/badge/design-ChatGPT--inspired%20Obsidian-171717.svg)](frontend/styles.css)
+[![Theme](https://img.shields.io/badge/design-Obsidian%20%26%20Electric%20Violet-101116.svg)](frontend/styles.css)
 
 **Aegis AI** is a functional, privacy-first personal AI assistant and autonomous coding operator featuring **Dual-Provider Inference**:
 1. **Local Inference**: Powered by **NVIDIA Nemotron 3.5 Bolt E4B** running locally on your hardware via **Ollama** (`http://127.0.0.1:11434`).
 2. **Cloud Inference**: Powered by **NVIDIA Nemotron** via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`).
 
-It combines a clean, **ChatGPT-inspired dark interface** (obsidian & charcoal palette with restrained cyan branding) with a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
+It combines a distinctive **Obsidian, Graphite, Platinum, and Electric Violet design identity** with a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
 
 ---
 
 ## Key Capabilities
 
-- **ChatGPT-Inspired Minimalist Response Experience**: Clean, focused dark chat layout with near-black main workspace (`#0d0d0d`), charcoal collapsible sidebar (`#171717`), instant conversation search, date-grouped sessions (`Today`, `Yesterday`, `Previous 7 Days`, `Older`), starter suggestion chips, auto-resizing floating composer, and full mobile off-canvas drawer responsiveness.
+- **Obsidian & Electric Violet Design System**: A bespoke software developer identity built on Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`), Platinum text (`#E6E4EC`), and Electric Violet accents (`#A78BFA`). Features crisp hairline borders (`#292B32`) and high-contrast WCAG-compliant typography without generic card clutter.
+- **Physics-Based Motion System**: Fluid, restrained interaction system governed by centralized physics tokens (`--ease-out`, `--duration-fast/normal/slow`). Includes smooth fade-and-rise hero entrance, staggered suggestion chip animations (`60ms`, `110ms`, `160ms`, `210ms`), micro-interaction press scaling (`scale(0.98)`), active navigation indicators, and full `@media (prefers-reduced-motion: reduce)` support.
+- **Pure Geometric SVG Iconography**: Zero platform-dependent emojis. Every interface action, suggestion chip, memory badge, and approval tag uses crisp, bespoke inline SVGs with uniform stroke geometry.
 - **Multi-Language Syntax Highlighting Engine**: Zero-dependency lexical tokenizer supporting **Python, JavaScript, TypeScript, Java, SQL, JSON, Bash, PowerShell, HTML/XML, CSS, YAML, and Markdown**. Monospace code canvases include detected language badges, copy code buttons, dark syntax tokens, and horizontal scrolling for long lines.
 - **Robust Markdown & Safe Sanitization**: Full support for headings, blockquotes, arbitrary nested lists, inline formatting (`**bold**`, `*italic*`, `` `code` ``), and responsive GitHub Flavored Markdown tables with horizontal overflow wrappers. Malformed HTML is escaped and URLs are sanitized strictly allowing `http(s)://` and `mailto:` while blocking `javascript:` and `data:` schemes.
 - **Assistant Message Actions & Toast Notifications**: One-click **Copy response** and individual **Copy code** buttons with visual checkmark states and animated toast alerts. Automatic fallback to legacy clipboard mechanisms (`document.execCommand`) ensures reliable copying across all browser security contexts.
@@ -42,7 +44,7 @@ It combines a clean, **ChatGPT-inspired dark interface** (obsidian & charcoal pa
 |                                     LOCAL HOST                                    |
 |                                                                                   |
 |  +------------------------+                     +-------------------------------+  |
-|  | ChatGPT-Style Web UI   | <-----------------> | FastAPI Backend (127.0.0.1)   |  |
+|  | Obsidian/Violet UI     | <-----------------> | FastAPI Backend (127.0.0.1)   |  |
 |  | [Local | Cloud Toggle] |                     +---------------+---------------+  |
 |  | [Syntax Highlighter]   |                                     |                  |
 |  | [AbortController Stop] |                                     v                  |
@@ -176,8 +178,8 @@ http://127.0.0.1:8000
 Aegis AI lets you switch between local Ollama inference and cloud inference **without restarting the server**:
 
 1. **Via Web UI**:
-   - In the top header bar, click **Local (Ollama)** or **Cloud**.
-   - The indicator dot reflects immediate connectivity (green for ready, amber for missing model, red for offline).
+   - In the top header bar, click **Local** or **Cloud**.
+   - The indicator dot reflects immediate connectivity (green for ready, amber for unconfigured, red for offline).
    - The active model tag updates dynamically.
 
 2. **Via REST API**:
@@ -190,9 +192,9 @@ Aegis AI lets you switch between local Ollama inference and cloud inference **wi
 
 All tests execute deterministically and require **zero API credits**.
 
-### Run Full Verification (Python + Node.js — 56 Tests):
+### Run Full Verification (Python + Node.js — 57 Tests):
 ```bash
-python -m pytest && node tests/test_markdown_renderer.js
+python -m pytest; node tests/test_markdown_renderer.js
 ```
 
 ### Run Python Backend Tests:
@@ -208,18 +210,18 @@ node tests/test_markdown_renderer.js
 Expected output:
 ```
 ============================= test session starts =============================
-collected 45 items
+collected 46 items
 tests\test_approvals.py ..                                               [  4%]
 tests\test_audit.py ..                                                   [  8%]
-tests\test_chat.py ......                                                [ 22%]
-tests\test_frontend.py .....                                             [ 33%]
-tests\test_health.py ..                                                  [ 37%]
-tests\test_llm.py ....                                                   [ 46%]
-tests\test_memory.py ....                                                [ 55%]
+tests\test_chat.py ......                                                [ 21%]
+tests\test_frontend.py ......                                            [ 34%]
+tests\test_health.py ..                                                  [ 39%]
+tests\test_llm.py ....                                                   [ 47%]
+tests\test_memory.py ....                                                [ 56%]
 tests\test_projects.py ..                                                [ 60%]
 tests\test_provider.py ............                                      [ 86%]
 tests\test_workspace.py ......                                           [100%]
-============================= 45 passed in 3.06s ==============================
+============================= 46 passed in 2.45s ==============================
 
 --- Running Aegis AI Markdown & Syntax Highlighter Tests ---
 ✓ Safe URL sanitizer tests passed

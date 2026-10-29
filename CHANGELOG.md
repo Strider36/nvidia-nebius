@@ -4,6 +4,40 @@ All notable changes to **Aegis AI** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-10-30
+
+### Added
+- **Obsidian, Graphite, Platinum & Electric Violet Design System**:
+  - Replaced generic navy/cyan styling with a bespoke developer-focused identity.
+  - Centralized surface tokens: Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`).
+  - High-contrast Platinum typography (`#E6E4EC`), Slate secondary text (`#A2A2AF`), and muted captions (`#777986`) meeting WCAG AAA/AA standards.
+  - Electric Violet accent palette (`#A78BFA`, `#B9A5FF`, `rgba(167, 139, 250, 0.12)`).
+  - Crisp hairline borders (`#292B32`, `#3D414D`) and semantic state tokens (`#62C9A0` success, `#E7B96A` warning, `#F07878` error).
+- **Physics-Based Motion System**:
+  - Implemented cohesive motion physics tokens: `--ease-out: cubic-bezier(0.16, 1, 0.3, 1)`, `--ease-in-out: cubic-bezier(0.4, 0, 0.2, 1)`.
+  - Defined timing scale: `--duration-fast: 150ms`, `--duration-normal: 220ms`, `--duration-slow: 360ms`.
+  - Added staggered entrance physics on prompt suggestion chips (`@keyframes chipEntrance`).
+  - Added smooth fade-and-rise entrance on welcome hero composition (`@keyframes heroEntrance`).
+  - Micro-interaction press scaling (`scale(0.98)`) on buttons and focus glow rings on input elements.
+  - Comprehensive accessibility compliance with `@media (prefers-reduced-motion: reduce)`.
+- **Pure Geometric SVG Iconography**:
+  - Replaced all platform-dependent emoji glyphs (`📋`, `🔍`, `🐞`, `🧪`, `🧠`) with bespoke, uniform 1.75px stroke inline SVGs.
+- **Design System & Motion Automated Test Suite**:
+  - Added `test_frontend_obsidian_violet_design_system_and_motion` in `tests/test_frontend.py` verifying color tokens, motion variables, keyframes, and geometric SVGs.
+- **Synchronized Documentation Suite**:
+  - Reconciled and updated `PRD.md`, `README.md`, `ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md`, `TASKS.md`, and `TESTING.md` for version 0.5.0.
+
+### Changed
+- Bumped application version to `0.5.0` in `app/__init__.py` and `pyproject.toml`.
+- Harmonized syntax highlighting token colors to Electric Violet (`#A78BFA`), Sage Mint (`#62C9A0`), Slate (`#777986`), and Sky (`#93C5FD`).
+
+### Verification & Tests
+- **57 total automated tests executed**: 57 passed, 0 failed.
+  - 46 Python backend tests passed (`python -m pytest`).
+  - 11 JavaScript frontend renderer tests passed (`node tests/test_markdown_renderer.js`).
+
+---
+
 ## [0.4.0] — 2026-10-29
 
 ### Added

@@ -92,5 +92,37 @@ def test_frontend_response_experience_and_syntax_highlighting():
     assert "sanitizeUrl" in js_res.text
 
 
+def test_frontend_obsidian_violet_design_system_and_motion():
+    """Verify v0.5.0 Obsidian & Electric Violet tokens, motion system, and SVG suggestion chips."""
+    html_res = client.get("/")
+    assert html_res.status_code == 200
+    # Confirm clean geometric SVGs inside suggestion chips (no emoji glyphs)
+    assert 'class="chip-icon"' in html_res.text
+    assert '<polyline points="16 18 22 12 16 6">' in html_res.text
+
+    css_res = client.get("/styles.css")
+    assert css_res.status_code == 200
+    # Core color tokens
+    assert "#0B0C0F" in css_res.text
+    assert "#101116" in css_res.text
+    assert "#15171D" in css_res.text
+    assert "#1B1D25" in css_res.text
+    assert "#E6E4EC" in css_res.text
+    assert "#A2A2AF" in css_res.text
+    assert "#777986" in css_res.text
+    assert "#A78BFA" in css_res.text
+    assert "#B9A5FF" in css_res.text
+    assert "#292B32" in css_res.text
+    assert "#62C9A0" in css_res.text
+    assert "#E7B96A" in css_res.text
+    assert "#F07878" in css_res.text
+    # Motion tokens and keyframes
+    assert "--ease-out" in css_res.text
+    assert "--duration-fast" in css_res.text
+    assert "heroEntrance" in css_res.text
+    assert "chipEntrance" in css_res.text
+
+
+
 
 

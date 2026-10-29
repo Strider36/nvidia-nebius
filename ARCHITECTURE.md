@@ -1,8 +1,8 @@
 # Aegis AI — System Architecture Document
 
-**Version:** 0.4.0  
+**Version:** 0.5.0  
 **Status:** Approved & Current Baseline  
-**Date:** 2026-10-29  
+**Date:** 2026-10-30  
 
 ---
 
@@ -11,7 +11,7 @@
 Aegis AI is a privacy-first, developer-centric personal AI operator and autonomous coding assistant built around three foundational pillars:
 1. **Dual-Provider Inference with Strict Isolation**: Seamlessly switch between zero-data-leakage local inference via **Ollama** (`http://127.0.0.1:11434`) running **NVIDIA Nemotron 3.5 Bolt E4B** and high-throughput cloud inference via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`). Under no circumstances is local code or conversation silently routed to the cloud.
 2. **Human-in-the-Loop Security & Workspace Sandboxing**: All file modifications and shell executions are sandboxed inside `./workspace` (or configured `AEGIS_WORKSPACE`). Automatic timestamped backups are generated in `.aegis_backups/`, and every patch or allowlisted test runner command requires explicit human review and approval.
-3. **ChatGPT-Inspired Premium Response Experience**: Obsidian-dark single-page interface with a zero-dependency multi-language syntax highlighter (12+ languages), resilient Markdown parsing (GFM tables, nested lists, blockquotes), safe URL sanitization, true client-side cancellation via `AbortController`, and one-click clipboard actions.
+3. **Obsidian & Electric Violet Design System & Motion Physics**: Distinctive developer-first design identity built on Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`), Platinum text (`#E6E4EC`), and Electric Violet accents (`#A78BFA`). Features crisp hairline borders (`#292B32`), bespoke geometric SVG icons (zero emoji glyphs), a zero-dependency multi-language syntax highlighter, resilient Markdown parsing, true client-side cancellation via `AbortController`, and a cohesive physics-based motion system (`--ease-out`).
 
 ---
 
@@ -22,10 +22,10 @@ Aegis AI is a privacy-first, developer-centric personal AI operator and autonomo
 |                                              BROWSER CLIENT                                           |
 |                                                                                                       |
 |  +---------------------------+  +-------------------------------+  +-------------------------------+  |
-|  | Collapsible History       |  | Centered Reading Stream       |  | Response Experience Engine    |  |
-|  | - Realtime Text Search    |  | - 48rem Focused Column        |  | - Zero-Dep Syntax Highlighting|  |
-|  | - Date Grouping           |  | - Dynamic Message Composer    |  | - Safe Markdown & Tables     |  |
-|  | - Mobile Off-Canvas Drawer|  | - Suggestion Starter Chips    |  | - Copy Actions & Toast System |  |
+|  | Graphite Collapsible Bar  |  | Centered Reading Stream       |  | Response & Motion System      |  |
+|  | - Realtime Search & Date  |  | - 48rem Focused Column        |  | - Zero-Dep Syntax Highlighting|  |
+|  | - Grouped History Items   |  | - Obsidian/Graphite Surfaces  |  | - Safe Markdown & Tables     |  |
+|  | - Mobile Off-Canvas Drawer|  | - Bespoke Geometric SVG Icons |  | - Electric Violet Accents     |  |
 |  +---------------------------+  +-------------------------------+  | - AbortController (#btnStop)  |  |
 |                                                                    +-------------------------------+  |
 +-------------------------------------------------------------------------------------------------------+
@@ -89,18 +89,75 @@ Aegis AI is a privacy-first, developer-centric personal AI operator and autonomo
 
 ---
 
-## 3. End-to-End Request Lifecycle
+## 3. Design System & Motion System Architecture (v0.5.0)
+
+### 3.1 Design System Tokens & Surface Hierarchy
+Centralized in `frontend/styles.css`:
+```css
+:root {
+  /* Surfaces */
+  --bg-primary: #0B0C0F;       /* Obsidian main canvas */
+  --bg-sidebar: #101116;       /* Graphite sidebar */
+  --bg-secondary: #15171D;     /* Composer, cards, nav items */
+  --bg-elevated: #1B1D25;      /* Modals, popovers, active pills */
+  --bg-hover: #222530;         /* Interactive hover */
+  --bg-active: #2A2E3B;        /* Pressed / selected state */
+
+  /* Hairline Crisp Borders */
+  --border-subtle: #292B32;    /* Hairline boundary */
+  --border-active: #3D414D;    /* Interactive focus border */
+  --border-accent: #A78BFA;    /* Electric violet focus ring */
+
+  /* Platinum Typography */
+  --text-primary: #E6E4EC;     /* High contrast body (WCAG AAA) */
+  --text-secondary: #A2A2AF;   /* Secondary slate (WCAG AA) */
+  --text-muted: #777986;       /* Muted labels (WCAG AA) */
+
+  /* Electric Violet Accent System */
+  --accent-primary: #A78BFA;   /* Electric violet base */
+  --accent-hover: #B9A5FF;     /* Violet hover highlight */
+  --accent-subtle: rgba(167, 139, 250, 0.12);
+  --accent-glow: rgba(167, 139, 250, 0.28);
+  --accent-gradient: linear-gradient(135deg, #A78BFA, #7C3AED);
+
+  /* Semantic State Tokens */
+  --color-success: #62C9A0;    /* Sage mint */
+  --color-warning: #E7B96A;    /* Warm amber */
+  --color-error: #F07878;      /* Coral rose */
+}
+```
+
+### 3.2 Motion System Architecture
+- **Physics Tokens**:
+  - `--ease-out`: `cubic-bezier(0.16, 1, 0.3, 1)`
+  - `--ease-in-out`: `cubic-bezier(0.4, 0, 0.2, 1)`
+  - `--duration-fast`: `150ms` (hover, active press, focus rings)
+  - `--duration-normal`: `220ms` (toasts, cards, panels)
+  - `--duration-slow`: `360ms` (welcome hero, modal entrances)
+- **Keyframe Sequences**:
+  - `@keyframes heroEntrance`: Smooth fade and rise (opacity from 0 to 1, translateY from 10px to 0).
+  - `@keyframes chipEntrance`: Staggered appearance of prompt suggestion chips (`60ms`, `110ms`, `160ms`, `210ms`).
+  - `@keyframes modalPop`: Elevated surfaces entrance (scale from 0.98 to 1.0, opacity from 0 to 1).
+  - `@keyframes dotPulse`: Restrained thinking pulse wave.
+- **Accessibility**: `@media (prefers-reduced-motion: reduce)` zeroes out animation durations, providing instant layout presentation for sensitive users.
+
+### 3.3 Pure Geometric SVG Iconography
+Platform-dependent emoji glyphs (`📋`, `🔍`, `🐞`, `🧪`, `🧠`) have been entirely eliminated. The interface utilizes uniform 1.75px stroke geometric inline SVGs styled with CSS tokens, guaranteeing identical visual rendering across Windows, macOS, and Linux.
+
+---
+
+## 4. End-to-End Request Lifecycle
 
 Tracing a complete request from the user's keystroke through to the final rendered UI:
 
-1. **User Action**: The user enters a prompt into `#chatInput` and presses `Enter` (or clicks `#btnSend`).
+1. **User Action**: The user enters a prompt into `#messageInput` and presses `Enter` (or clicks `#btnSend`).
 2. **Client State Preparation**:
    - `frontend/app.js` checks if a request is already active; if so, returns early.
    - An `AbortController` instance is instantiated and stored in `currentAbortController`.
-   - The UI updates: `#btnSend` hides, `#btnStop` reveals with an active pulse, `#composerStatus` announces processing.
-   - A user message node is rendered into the chat container; the view scrolls to bottom.
+   - The UI updates: `#btnSend` hides, `#btnStop` reveals with an active pulse.
+   - A user message node is rendered into the chat container.
 3. **HTTP Dispatch**:
-   - Client sends `POST /api/chat` with `{ message, conversation_id, project_id }` passing `{ signal: currentAbortController.signal }`.
+   - Client sends `POST /api/chat` with `{ message, conversation_id, project_id, skill_id, provider }` passing `{ signal: currentAbortController.signal }`.
 4. **Backend Ingestion & Memory Enrichment**:
    - FastAPI `/api/chat` router passes payload to `AgentService.process_message()`.
    - `AgentService` queries SQLite `memories` table, performing keyword extraction on the user's prompt to find relevant contextual items.
@@ -120,48 +177,15 @@ Tracing a complete request from the user's keystroke through to the final render
      - `<<<PROPOSE_TASK:title>>>desc<<<END_TASK>>>`
    - For every detected tag, an approval record is persisted in SQLite with status `PENDING_APPROVAL`.
 8. **HTTP Response & Client Rendering**:
-   - Backend returns `{ reply, conversation_id, approvals: [...] }`.
-   - `frontend/app.js` runs `renderSafeMarkdown(reply)`:
+   - Backend returns `{ assistant_message, conversation_id, pending_approvals: [...] }`.
+   - `frontend/app.js` runs `renderSafeMarkdown(assistant_message)`:
      - Fenced code blocks are isolated into `@@AEGIS-CODE-BLOCK-${idx}@@` placeholders.
      - Tables are converted into responsive HTML with `.msg-table-wrapper` horizontal scrollers.
      - Lists, headings, quotes, and inline styles are formatted.
      - Code placeholders are restored with syntax highlighting via `highlightSyntax(code, lang)`.
      - Code header chrome with language badge and copy button is injected.
    - Approval cards are rendered with interactive **Approve** and **Reject** buttons and unified diff viewers.
-   - `#btnStop` hides, `#btnSend` returns, and `#composerStatus` resets.
-
----
-
-## 4. Frontend Response Experience Architecture
-
-### 4.1 Zero-Dependency Syntax Highlighting Engine
-The client implements a zero-dependency lexical tokenizer (`highlightSyntax`) in `frontend/app.js`:
-- **Supported Languages**: Python, JavaScript, TypeScript, Java, SQL, JSON, Bash, PowerShell, HTML/XML, CSS, YAML, Markdown.
-- **Token Classification**:
-  - `.tok-keyword`: Language control structures (`def`, `class`, `function`, `SELECT`, `async`, etc.).
-  - `.tok-string`: Quoted string literals (`"..."`, `'...'`, `` `...` ``).
-  - `.tok-comment`: Inline and block comments (`#`, `//`, `/* */`, `--`).
-  - `.tok-number`: Numeric literals and hexadecimals.
-  - `.tok-boolean`: Boolean constants (`true`, `false`, `None`, `null`).
-  - `.tok-function`: Invocation and definition signatures (`functionName(...)`).
-  - `.tok-type`: Common data types (`int`, `str`, `List`, `Promise`, `boolean`).
-  - `.tok-operator`: Comparison, arithmetic, and logical operators (`==`, `!=`, `&&`, `||`).
-- **Resilience**: Unknown languages fallback cleanly to HTML-escaped monospace blocks without crashing.
-
-### 4.2 Safe Markdown & XSS Protection
-- **Pure String Escaping**: `escapeHtml` avoids DOM mutation pitfalls by performing exact entity replacement (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`).
-- **Safe URL Sanitizer (`sanitizeUrl`)**: Validates hyperlinks against `/^(https?:\/\/|mailto:)/i`. Malformed links or dangerous protocols (`javascript:`, `vbscript:`, `data:`) are replaced with `#blocked-unsafe-url`.
-- **Placeholder Non-Collision**: Code blocks use `@@AEGIS-CODE-BLOCK-${idx}@@` placeholders to prevent collisions with Markdown italic/bold regex tokens (`__` or `*`).
-- **Unclosed Code Fence Recovery**: Dangling code blocks (e.g. from interrupted responses) are automatically closed to prevent UI corruption.
-
-### 4.3 Client-Side Cancellation Engine (`AbortController`)
-- When generation starts, `currentAbortController = new AbortController()`.
-- The stop button (`#btnStop`) and `Escape` key invoke `abortGeneration()`.
-- The in-flight HTTP request is aborted, network traffic halts immediately, and the client renders:
-  ```
-  ⏹️ Generation cancelled by user.
-  ```
-- Composer state, buttons, and conversation history are restored without duplicate records.
+   - `#btnStop` hides, `#btnSend` returns.
 
 ---
 
@@ -229,7 +253,7 @@ Aegis AI uses embedded SQLite (`aegis.db`) with foreign keys enabled:
 | [`app/services/memory_service.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/app/services/memory_service.py) | SQLite memory repository, keyword index matching, token scrubbing. |
 | [`app/security/workspace.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/app/security/workspace.py) | Path traversal verification, safe file I/O, timestamped backup engine. |
 | [`app/security/approvals.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/app/security/approvals.py) | Command allowlist verification, approval state transitions, patch execution. |
-| [`frontend/index.html`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/frontend/index.html) | ChatGPT-inspired DOM layout, collapsible sidebar, stop button, toast container. |
+| [`frontend/index.html`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/frontend/index.html) | Geometric SVG icons, collapsible sidebar, stop button, toast container. |
 | [`frontend/app.js`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/frontend/app.js) | Syntax highlighting, safe Markdown engine, AbortController, clipboard actions. |
-| [`frontend/styles.css`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/frontend/styles.css) | Obsidian dark theme, syntax highlighting tokens, toast styling, responsive layout. |
+| [`frontend/styles.css`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/frontend/styles.css) | Obsidian & Electric Violet theme, motion system tokens, responsive layout. |
 | [`skills/`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/skills/) | Reusable developer skill definitions (Planner, Explainer, Debugger, Test Writer). |
