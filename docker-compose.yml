@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  aegis-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegis-ai
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - .env
+    environment:
+      - AEGIS_HOST=0.0.0.0
+      - AEGIS_PORT=8000
+      - AEGIS_WORKSPACE=/app/workspace
+      - AEGIS_DATABASE_PATH=/app/data/aegis.db
+    volumes:
+      - ./workspace:/app/workspace
+      - aegis-data:/app/data
+
+volumes:
+  aegis-data:
+
