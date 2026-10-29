@@ -737,7 +737,8 @@ body {
   flex-shrink: 0;
 }
 
-/* Dual Provider Switcher */
+/* Agent Backend Switcher & Dual Provider Switcher */
+.agent-mode-switcher-wrapper,
 .provider-switcher-wrapper {
   display: flex;
   align-items: center;

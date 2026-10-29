@@ -78,6 +78,18 @@ class Settings:
         self.max_output_tokens: int = int(os.getenv("AEGIS_MAX_OUTPUT_TOKENS", "2048"))
         self.max_file_size_bytes: int = int(os.getenv("AEGIS_MAX_FILE_SIZE_BYTES", "1048576"))  # 1 MB
 
+        # Hermes Agent Integration settings
+        default_hermes_bin = r"C:\Users\jayan\AppData\Local\hermes\bin\hermes.exe"
+        if not os.path.exists(default_hermes_bin):
+            import shutil
+            which_hermes = shutil.which("hermes")
+            if which_hermes:
+                default_hermes_bin = which_hermes
+        self.hermes_bin_path: str = os.getenv("HERMES_BIN_PATH", default_hermes_bin).strip()
+        self.hermes_timeout: float = float(os.getenv("HERMES_TIMEOUT", "90.0"))
+        self.hermes_enabled: bool = os.getenv("HERMES_ENABLED", "true").lower() in ("1", "true", "yes") and os.path.exists(self.hermes_bin_path)
+        self.default_agent_backend: str = os.getenv("AEGIS_DEFAULT_AGENT_BACKEND", "aegis").strip().lower()
+
         # Workspace & DB path resolution
         raw_workspace = os.getenv("AEGIS_WORKSPACE", "./workspace").strip()
         self.workspace_path: Path = Path(raw_workspace).resolve()

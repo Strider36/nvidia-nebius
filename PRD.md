@@ -1,6 +1,6 @@
 # Aegis AI — Product Requirements Document (PRD)
 
-**Document Version:** 0.7.0  
+**Document Version:** 0.8.0  
 **Status:** Approved / Active Baseline  
 **Date:** 2026-10-30  
 **System Name:** Aegis AI Operator  
@@ -10,7 +10,7 @@
 ## 1. Product Vision & Target Users
 
 ### 1.1 Vision
-Aegis AI is a private, security-first personal AI assistant and autonomous coding operator designed for software engineers, security researchers, and systems developers. It combines the distraction-free conversational experience of modern conversational AI with a unified **Obsidian, Graphite, Platinum, and Electric Violet** design system across all 7 application views (Main Chat, Skills, Memory, Approvals, Workspace, Audit, Settings), absolute data sovereignty, persistent contextual memory, and a sandboxed human-in-the-loop execution engine.
+Aegis AI is a private, security-first personal AI assistant and autonomous coding operator designed for software engineers, security researchers, and systems developers. It combines the distraction-free conversational experience of modern conversational AI with a unified **Obsidian, Graphite, Platinum, and Electric Violet** design system across all 7 application views (Main Chat, Skills, Memory, Approvals, Workspace, Audit, Settings), absolute data sovereignty, persistent contextual memory, pluggable agent backends (Native Aegis and Hermes Agent), and a sandboxed human-in-the-loop execution engine.
 
 ---
 
@@ -20,14 +20,18 @@ Aegis AI is a private, security-first personal AI assistant and autonomous codin
 2. **Cloud Data Leakage Risk**: Traditional cloud AI assistants transmit raw proprietary code, environment secrets, and intellectual property across third-party networks, violating strict corporate governance.
 3. **Uncontrolled Agent Execution**: Fully autonomous agents that write directly to the host filesystem or execute arbitrary shell commands pose severe risks of data loss or remote code execution.
 4. **Context Amnesia**: Standard LLM chats lose context between sessions, requiring developers to repeatedly restate environment details, architectural constraints, and personal workflow preferences.
+5. **Backend Inflexibility**: Rigid single-engine architectures prevent developers from exploring specialized external agent runtimes without sacrificing workspace isolation or audit trails.
 
 ---
 
 ## 3. High-Level System Architecture
 
 Aegis AI operates as a self-contained local web application:
-- **Frontend**: Obsidian-dark single-page application served directly from FastAPI, featuring a centered 48rem reading column, collapsible history sidebar, zero-dependency tokenizing syntax highlighter, clipboard management, an `AbortController` cancellation engine, a cohesive physics-based motion system, and unified components reused across all 7 views.
-- **Backend Service**: Asynchronous Python FastAPI application exposing REST APIs for provider switching, health probes, conversation management, approval tracking, workspace interaction, and audit logging.
+- **Frontend**: Obsidian-dark single-page application served directly from FastAPI, featuring a centered 48rem reading column, collapsible history sidebar, zero-dependency tokenizing syntax highlighter, clipboard management, an `AbortController` cancellation engine, a cohesive physics-based motion system, topbar Agent Mode switcher (`#agentModeSwitcher`), and unified components reused across all 7 views.
+- **Backend Service**: Asynchronous Python FastAPI application exposing REST APIs for agent backend routing, provider switching, health probes, conversation management, approval tracking, workspace interaction, and audit logging.
+- **Agent Reasoning Backends**:
+  - **Native Aegis**: Internal prompt synthesizer, skill director, and direct model API client.
+  - **Hermes Agent Subprocess Adapter**: Sandboxed subprocess runner (`hermes.exe chat`) decoding streaming JSONL tokens, tied to the active inference provider with tools disabled (`--toolsets ""`).
 - **Inference Layer**: Dual-provider architecture supporting:
   - **Local**: Ollama HTTP API (`http://127.0.0.1:11434`) running NVIDIA Nemotron 3.5 Bolt E4B.
   - **Cloud**: OpenAI-compatible client connecting to Nebius Token Factory or OpenRouter.
@@ -104,11 +108,19 @@ Centralized in `frontend/styles.css` `:root`:
 - **FR-5.2 Propose Commands**: Parse `<<<PROPOSE_COMMAND>>>` tags, validate against strict allowlisted test runner commands (`pytest`, `unittest`, `npm test`), and require user approval.
 - **FR-5.3 Automatic Backups**: Create timestamped rollback copies in `.aegis_backups/` before applying any approved file patch.
 - **FR-5.4 Workspace Sandboxing**: Confine all file reads and writes to `./workspace`, rejecting path traversal attempts (`../`) and forbidden files (`.env`, `.git`).
-
 ### 5.6 Persistent Memory & Project Backlog
 - **FR-6.1 Semantic SQLite Memory**: Store facts, user preferences, and project context in SQLite. Automatically inject top keyword-indexed memories into prompt context.
 - **FR-6.2 Secret Shield**: Filter out passwords, API keys, and sensitive tokens at the memory gateway before saving to database.
 - **FR-6.3 Project & Task Tracking**: Organize development efforts into projects with backlog task states (`pending`, `in_progress`, `completed`).
+
+### 5.7 Pluggable Agent Backend & Hermes Integration
+- **FR-7.1 Backend Selection**: Dynamic per-request selection between Native Aegis and Hermes Agent via `agent_backend: "aegis" | "hermes"` in `POST /api/chat` and `POST /api/chat/stream`. Topbar switcher persists user preference in `localStorage`.
+- **FR-7.2 Subprocess Invocation**: Hermes CLI (`hermes.exe chat --query-file ... --format stream-json --oneshot`) executed via isolated subprocess using temporary prompt files with clean teardown.
+- **FR-7.3 Workspace Sandboxing**: Hermes execution locked strictly to the workspace root (`--in <workspace_path>`) with unsupervised internal tools suppressed (`--toolsets ""`).
+- **FR-7.4 JSONL Streaming**: Decode Hermes JSONL stdout events (`{"type": "text", "text": "..."}`) into real-time SSE tokens on `/api/chat/stream`.
+- **FR-7.5 Human Approval Extraction**: Parse `<<<PROPOSE_PATCH>>>`, `<<<PROPOSE_COMMAND>>>`, and `<<<PROPOSE_TASK>>>` emitted by Hermes and route into SQLite `pending_approvals`.
+- **FR-7.6 Anti-Fallback Guarantee**: Local Ollama timeouts or failures when running Hermes strictly fail with HTTP 503/502; silent cloud failover is prohibited.
+- **FR-7.7 Diagnostic Probing**: `GET /api/hermes/status` exposes binary location, version string, availability, and active provider readiness.
 
 ---
 
@@ -133,23 +145,29 @@ Centralized in `frontend/styles.css` `:root`:
 
 ## 8. Current Release Scope & Roadmap
 
-### In Scope (v0.7.0 — Delivered)
-- **Unified Design System Across All 7 Views**:
+### In Scope (v0.8.0 — Delivered)
+- **Hermes Agent Optional Backend Integration**:
+  - Subprocess adapter (`HermesService`) wrapping local Hermes CLI (`C:\Users\jayan\AppData\Local\hermes\bin\hermes.exe` v0.22.5).
+  - Compatible with local NVIDIA Nemotron via Ollama (`http://127.0.0.1:11434/v1`) and Cloud provider.
+  - Subprocess sandboxed inside `./workspace` (`--in <workspace_path>`) with tools disabled (`--toolsets ""`).
+  - Full human approval preservation for patches, commands, and tasks.
+  - JSONL streaming token decoder integrated with native SSE (`/api/chat/stream`).
+  - Anti-fallback invariant strictly maintained: local Ollama failures never failover to cloud.
+  - Frontend Agent Mode switcher in topbar and Hermes status card in Settings modal.
+  - Status & diagnostic endpoint `GET /api/hermes/status`.
+- **Unified Design System Across All 7 Views (v0.7.0)**:
   - Main Chat, Skills, Memory, Approvals, Workspace, Audit, and Settings share 100% of tokens and interaction patterns.
   - Mathematical typography scale (`--font-size-*`) and spacing scale (`--space-*`).
-  - Pure geometric SVG close icon buttons (`aria-label="Close modal"`), replacing all legacy `&times;` entities.
-  - Dedicated Settings & Provider Diagnostics dialog (`#modalSettings`) with real-time connectivity diagnostics (`#btnRunDiagnostics`).
-  - Standardized `.status-pill`, `.data-table`, `.empty-state`, and flattened non-nested card structures.
+  - Pure geometric SVG close icon buttons (`aria-label="Close modal"`).
+  - Dedicated Settings & Provider Diagnostics dialog (`#modalSettings`).
 - **Native Server-Sent Events (SSE) Token Streaming (v0.6.0)**:
   - `POST /api/chat/stream` delivering real-time chunked tokens.
-  - Native streaming integration with local Ollama HTTP API (`stream: true`) and cloud OpenAI SDK (`stream=True`).
-  - Zero silent fallback: strict provider isolation enforced on streaming failures.
   - Blinking streaming cursor (`.streaming-cursor`) with smooth completion transition to formatted Markdown.
-  - Viewport auto-scroll lock: auto-scrolls when user is near bottom (<=160px), preserves position when scrolled up.
-- 67 automated tests (56 Python + 11 JavaScript) with 100% pass rate.
+  - Viewport auto-scroll lock.
+- **76 automated tests** (65 Python + 11 JavaScript) with 100% pass rate.
 - Complete synchronized documentation suite across all 7 core markdown files.
 
-### Future Roadmap (v0.8.0+)
+### Future Roadmap (v0.9.0+)
 - **Tree-sitter Syntax Highlighting**: Optional WebAssembly-based AST highlighting for deeper semantic colorization.
 - **Multi-File Workspace Diffs**: Interactive multi-tab diff viewer for large refactorings touching dozens of files.
 - **Offline Embeddings Vector Search**: Local SQLite-vec integration for dense retrieval in place of keyword-based memory matching.

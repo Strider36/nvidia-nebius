@@ -1,6 +1,6 @@
 # Aegis AI — Task Tracker & Backlog
 
-**Version Baseline:** 0.7.0  
+**Version Baseline:** 0.8.0  
 **Last Updated:** 2026-10-30  
 **Status Key:**  
 - `[DONE]` Completed, verified with automated tests, and documented.
@@ -9,7 +9,22 @@
 
 ---
 
-## 1. Milestone 7: Unified Premium Design System Across Application (v0.7.0 — Completed)
+## 1. Milestone 8: Hermes Agent Backend Integration (v0.8.0 — Completed)
+
+| Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
+|---|---|:---:|:---:|---|---|
+| **TASK-801** | Hermes host environment audit & verification | Critical | `[DONE]` | None | Detected `hermes.exe` at `C:\Users\jayan\AppData\Local\hermes\bin\hermes.exe` (v0.22.5); verified Ollama Nemotron CLI invocation. |
+| **TASK-802** | HermesService subprocess adapter | High | `[DONE]` | TASK-801 | Built `app/services/hermes_service.py` with query file composition, timeout controls, and process cleanup. |
+| **TASK-803** | JSONL streaming protocol & SSE bridge | High | `[DONE]` | TASK-802 | Streamed tokens line-by-line (`{"type": "text", "text": "..."}`) into Aegis `/api/chat/stream` SSE channel. |
+| **TASK-804** | Subprocess workspace sandboxing & tool suppression | Critical | `[DONE]` | TASK-802 | Enforced `--in <workspace_path>` and suppressed unsupervised internal tools with `--toolsets ""`. |
+| **TASK-805** | Human approval extraction for Hermes proposals | Critical | `[DONE]` | TASK-802 | Intercepted `<<<PROPOSE_PATCH>>>`, `<<<PROPOSE_COMMAND>>>` tags from Hermes output into SQLite `pending_approvals`. |
+| **TASK-806** | Anti-fallback invariant verification | Critical | `[DONE]` | TASK-802 | Confirmed local Ollama failures with Hermes backend never silently fail over to cloud. |
+| **TASK-807** | Frontend Agent Mode switcher & diagnostics card | High | `[DONE]` | TASK-802 | Added topbar `#agentModeSwitcher` toggle and `#settingsHermesCard` in Settings modal. |
+| **TASK-808** | Automated test suite & end-to-end live task test | Critical | `[DONE]` | All v0.8.0 | Added `tests/test_hermes.py` (8 tests) and verified live end-to-end task (76 automated tests passing). |
+
+---
+
+## 2. Milestone 7: Unified Premium Design System Across Application (v0.7.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -24,7 +39,7 @@
 
 ---
 
-## 2. Milestone 6: Native Token Streaming & Advanced Tooling (v0.6.0 — Completed)
+## 3. Milestone 6: Native Token Streaming & Advanced Tooling (v0.6.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -38,7 +53,7 @@
 
 ---
 
-## 3. Milestone 5: Obsidian/Violet Theme, Motion System & SVGs (v0.5.0 — Completed)
+## 4. Milestone 5: Obsidian/Violet Theme, Motion System & SVGs (v0.5.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -53,7 +68,7 @@
 
 ---
 
-## 4. Milestone 4: Premium Response Experience & Complete Documentation (v0.4.0 — Completed)
+## 5. Milestone 4: Premium Response Experience & Complete Documentation (v0.4.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -69,7 +84,7 @@
 
 ---
 
-## 5. Milestone 3: Interface Layout & Conversation Architecture (v0.3.0 — Completed)
+## 6. Milestone 3: Interface Layout & Conversation Architecture (v0.3.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -83,7 +98,7 @@
 
 ---
 
-## 6. Milestone 2: Dual-Provider Inference & Anti-Fallback Invariant (v0.2.0 — Completed)
+## 7. Milestone 2: Dual-Provider Inference & Anti-Fallback Invariant (v0.2.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -96,7 +111,7 @@
 
 ---
 
-## 7. Milestone 1: Core Foundation & Safe Sandbox (v0.1.0 — Completed)
+## 8. Milestone 1: Core Foundation & Safe Sandbox (v0.1.0 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
@@ -108,11 +123,12 @@
 
 ---
 
-## 8. Milestone 8: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.8.0 — Planned)
+## 9. Milestone 9: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.9.0 — Planned)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|
-| **TASK-801** | Tree-sitter WebAssembly grammar integration | Medium | `[PLANNED]` | None | AST-based token coloring for deeper semantic highlighting. |
-| **TASK-802** | Multi-file workspace diff staging viewer | High | `[PLANNED]` | None | Multi-tab diff viewer in workspace modal for complex refactorings. |
-| **TASK-803** | Dense vector search via local embeddings | High | `[PLANNED]` | None | Embeddings stored in SQLite-vec alongside keyword matching. |
+| **TASK-901** | Tree-sitter WebAssembly grammar integration | Medium | `[PLANNED]` | None | AST-based token coloring for deeper semantic highlighting. |
+| **TASK-902** | Multi-file workspace diff staging viewer | High | `[PLANNED]` | None | Multi-tab diff viewer in workspace modal for complex refactorings. |
+| **TASK-903** | Dense vector search via local embeddings | High | `[PLANNED]` | None | Embeddings stored in SQLite-vec alongside keyword matching. |
+
 

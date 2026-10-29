@@ -177,6 +177,18 @@
         </div>
 
         <div class="topbar-right">
+          <!-- Agent Mode Selector (Aegis vs Hermes) -->
+          <div class="agent-mode-switcher-wrapper" id="agentModeSwitcher" title="Select Agent Reasoning Backend">
+            <div class="provider-pill-switch" role="group" aria-label="Agent Backend Selector">
+              <button type="button" class="provider-pill-btn active" id="btnBackendAegis" data-backend="aegis" title="Aegis AI Native Reasoning Engine">
+                <span class="provider-name">Aegis</span>
+              </button>
+              <button type="button" class="provider-pill-btn" id="btnBackendHermes" data-backend="hermes" title="Hermes Agent v0.22.5 (Subprocess Sandbox)">
+                <span class="provider-name">Hermes</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Dual-Provider Selector -->
           <div class="provider-switcher-wrapper" id="providerSwitcher">
             <div class="provider-pill-switch" role="group" aria-label="Inference Provider Selector">
@@ -714,6 +726,33 @@
               <div class="settings-kv-row">
                 <span class="settings-kv-label">Human Approval Gate:</span>
                 <span class="settings-kv-val" style="color:var(--accent-primary);">100% Mandatory for Modifications</span>
+              </div>
+            </div>
+
+            <!-- Hermes Agent Backend Card -->
+            <div class="settings-card" id="settingsHermesCard">
+              <div class="settings-card-header">
+                <span>Hermes Agent Backend (Optional)</span>
+                <span class="status-pill" id="settingsHermesStatusPill">
+                  <span class="status-pill-dot" id="settingsHermesStatusDot"></span>
+                  <span id="settingsHermesStatusText">Checking...</span>
+                </span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Binary Location:</span>
+                <span class="settings-kv-val mono-path" id="settingsHermesPath" style="font-size:0.75rem;">Detecting...</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Agent Engine Version:</span>
+                <span class="settings-kv-val" id="settingsHermesVersion">Detecting...</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Process Sandbox:</span>
+                <span class="settings-kv-val" style="color:var(--color-success);">Confined to ./workspace (--in)</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">Tool Safeguard:</span>
+                <span class="settings-kv-val" style="color:var(--accent-primary);">Proposals Gated by Human Approvals</span>
               </div>
             </div>
           </div>

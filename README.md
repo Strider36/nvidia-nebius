@@ -1,24 +1,27 @@
 # Aegis AI — Private Personal AI Operator
 
-[![Version](https://img.shields.io/badge/version-0.7.0-A78BFA.svg)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.8.0-A78BFA.svg)](pyproject.toml)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-67%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-76%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
 [![Theme](https://img.shields.io/badge/design-Unified%20Obsidian%20%26%20Electric%20Violet-101116.svg)](frontend/styles.css)
 
-**Aegis AI** is a functional, privacy-first personal AI assistant and autonomous coding operator featuring **Dual-Provider Inference**:
+**Aegis AI** is a functional, privacy-first personal AI assistant and autonomous coding operator featuring **Dual-Provider Inference** and **Pluggable Agent Backends**:
 1. **Local Inference**: Powered by **NVIDIA Nemotron 3.5 Bolt E4B** running locally on your hardware via **Ollama** (`http://127.0.0.1:11434`).
 2. **Cloud Inference**: Powered by **NVIDIA Nemotron** via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`).
+3. **Pluggable Agent Backends**: Choose seamlessly between **Native Aegis** reasoning engine and **Hermes Agent** backend CLI (`v0.22.5`).
 
-It combines a **Unified Obsidian & Electric Violet Design System** across all 7 views with **native SSE token streaming**, a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
+It combines a **Unified Obsidian & Electric Violet Design System** across all 7 views with **native SSE token streaming**, an optional **Hermes Agent backend**, a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
 
 ---
 
 ## Key Capabilities
 
+- **Pluggable Agent Backends (Native Aegis + Hermes Agent)**: Seamlessly toggle between **Native Aegis** reasoning engine and the **Hermes Agent CLI** (`v0.22.5`). Hermes operates via a narrow subprocess invocation protocol (`hermes chat --query-file ... --format stream-json --oneshot`) backed directly by your local NVIDIA Nemotron Ollama instance or configured Cloud provider.
+- **Strict Hermes Subprocess Sandboxing & Human Approval Enforcement**: Hermes process execution is constrained strictly to `./workspace` (`--in <workspace_path>`) with external tools disabled (`--toolsets ""`). File modifications and command actions emitted by Hermes (`<<<PROPOSE_PATCH>>>`, `<<<PROPOSE_COMMAND>>>`) are intercepted by Aegis's supervisor and placed into the SQLite pending approvals queue—preventing arbitrary shell access or unattended filesystem writes.
 - **Unified Premium Design System (Across All 7 Views)**: A single cohesive design language applied uniformly to **Main Chat, Skills, Memory, Approvals, Workspace, Audit, and Settings**. Features mathematical typography tokens (`--font-size-2xs` to `--font-size-2xl`), standardized spacing scales (`--space-3xs` to `--space-2xl`), hairline borders (`#292B32`), accessible 28x28px geometric SVG close buttons (`aria-label="Close modal"`), and clean, flat surfaces eliminating gratuitous card-in-card nesting.
-- **Dedicated Settings & Provider Diagnostics View**: Comprehensive `#modalSettings` dialog inspecting configured provider, local vs cloud models, loopback interfaces (`127.0.0.1:8000`), SQLite engine status, sandbox boundaries, and one-click connectivity diagnostics (`#btnRunDiagnostics`).
-- **Native Server-Sent Events (SSE) Token Streaming**: Real-time token streaming from local Ollama (`stream: true`) and cloud models (`stream=True`) through `POST /api/chat/stream`. Features client-side chunk decoding via `ReadableStream`, a realistic blinking streaming cursor (`.streaming-cursor`), intelligent auto-scroll locking, active stream cancellation via `#btnStop` and `Escape`, and automatic fallback protection.
+- **Dedicated Settings & Provider Diagnostics View**: Comprehensive `#modalSettings` dialog inspecting configured provider, local vs cloud models, loopback interfaces (`127.0.0.1:8000`), SQLite engine status, sandbox boundaries, Hermes Agent diagnostics, and one-click connectivity diagnostics (`#btnRunDiagnostics`).
+- **Native Server-Sent Events (SSE) Token Streaming**: Real-time token streaming from local Ollama (`stream: true`), cloud models (`stream=True`), and Hermes streaming JSONL events through `POST /api/chat/stream`. Features client-side chunk decoding via `ReadableStream`, a realistic blinking streaming cursor (`.streaming-cursor`), intelligent auto-scroll locking, active stream cancellation via `#btnStop` and `Escape`, and automatic fallback protection.
 - **Obsidian & Electric Violet Design Identity**: A bespoke software developer identity built on Obsidian canvas (`#0B0C0F`), Graphite sidebar (`#101116`), elevated surfaces (`#15171D`, `#1B1D25`), Platinum text (`#E6E4EC`), and Electric Violet accents (`#A78BFA`). Features high-contrast WCAG-compliant typography and refined status pills (`.status-pill`).
 - **Physics-Based Motion System**: Fluid, restrained interaction system governed by centralized physics tokens (`--ease-out`, `--duration-fast/normal/slow`). Includes smooth fade-and-rise hero entrance, staggered suggestion chip animations (`60ms`, `110ms`, `160ms`, `210ms`), micro-interaction press scaling (`scale(0.98)`), active navigation indicators, and full `@media (prefers-reduced-motion: reduce)` support.
 - **Pure Geometric SVG Iconography**: Zero platform-dependent emojis. Every interface action, suggestion chip, memory badge, file list item, and approval tag uses crisp, bespoke inline SVGs with uniform stroke geometry.
@@ -39,42 +42,52 @@ It combines a **Unified Obsidian & Electric Violet Design System** across all 7 
 ## Architecture Diagram
 
 ```
-+-----------------------------------------------------------------------------------+
-|                                     LOCAL HOST                                    |
-|                                                                                   |
-|  +------------------------+                     +-------------------------------+  |
-|  | Obsidian/Violet UI     | <-----------------> | FastAPI Backend (127.0.0.1)   |  |
-|  | [Local | Cloud Toggle] |                     +---------------+---------------+  |
-|  | [Syntax Highlighter]   |                                     |                  |
-|  | [AbortController Stop] |                                     v                  |
-|  +------------------------+                     +-------------------------------+  |
-|                                                 | Agent & Security Layer        |  |
-|                                                 | - Per-Request Provider Snap   |  |
-|                                                 | - Anti-Fallback Invariant     |  |
-|                                                 | - Path Traversal Guard        |  |
-|                                                 | - Human Approval Life Cycle   |  |
-|                                                 | - Command Allowlist Verifier  |  |
-|                                                 | - Secret Redaction Shield     |  |
-|                                                 +-------+---------------+-------+  |
-|                                                         |               |          |
-|       +-------------------------------------------------+               |          |
-|       |                               +-----------------+               |          |
-|       v                               v                                 v          |
-|  +-----------------+          +-----------------+              +-----------------+ |
-|  | SQLite Database |          | Reusable Skills |              | Safe Workspace  | |
-|  | - Memories      |          | - Planner       |              | (./workspace)   | |
-|  | - Projects      |          | - Explainer     |              | - Unified Diffs | |
-|  | - Approvals     |          | - Debugger      |              | - Auto-Backups  | |
-|  | - Audit Trail   |          | - Test Writer   |              +-----------------+ |
-|  +-----------------+          +-----------------+                                  |
-+-------------|-----------------------------------------------------------|---------+
-              | HTTP (Localhost)                                          | HTTPS (Cloud)
-              v                                                           v
-+-------------------------------+                       +-----------------------------------+
-|       Ollama Local Daemon     |                       |    Nebius Token Factory Cloud     |
-|     (http://127.0.0.1:11434)  |                       |     OpenRouter API Gateway        |
-|  NVIDIA Nemotron 3.5 Bolt E4B |                       |    NVIDIA Nemotron Inference      |
-+-------------------------------+                       +-----------------------------------+
++-------------------------------------------------------------------------------------------------+
+|                                           LOCAL HOST                                            |
+|                                                                                                 |
+|  +------------------------+                           +--------------------------------------+  |
+|  | Obsidian/Violet UI     | <-----------------------> | FastAPI Backend (127.0.0.1:8000)     |  |
+|  | - Local/Cloud Toggle   |                           +------------------+-------------------+  |
+|  | - Native/Hermes Toggle |                                              |                      |
+|  | - SSE Streaming Client |                                              v                      |
+|  +------------------------+                           +--------------------------------------+  |
+|                                                       | Agent Routing & Security Supervisor  |  |
+|                                                       | - Per-Request Provider Snap          |  |
+|                                                       | - Anti-Fallback Invariant            |  |
+|                                                       | - Human Approval Interceptor         |  |
+|                                                       | - Workspace Path Guard               |  |
+|                                                       +----------+-------------------+-------+  |
+|                                                                  |                   |          |
+|                                          +-----------------------+                   |          |
+|                                          v                                           v          |
+|                        +------------------------------------+      +-------------------------+  |
+|                        | Native Aegis Engine (LLMService)   |      | Hermes Subprocess Adapter| |
+|                        | - System Prompt Composition        |      | (HermesService)         |  |
+|                        | - SSE Generator                    |      | - CLI: hermes.exe chat  |  |
+|                        | - Direct Model API                 |      | - --in ./workspace      |  |
+|                        +-----------------+------------------+      | - --toolsets ""         |  |
+|                                          |                         | - JSONL Stream Decoder  |  |
+|                                          |                         +------------+------------+  |
+|                                          +-----------------+--------------------+               |
+|                                                            |                                    |
+|                       +------------------------------------+--------------------------------+   |
+|                       |                                    |                                |   |
+|                       v                                    v                                v   |
+|              +-----------------+                  +-----------------+              +-----------------+
+|              | SQLite Database |                  | Reusable Skills |              | Safe Workspace  |
+|              | - Memories      |                  | - Planner       |              | (./workspace)   |
+|              | - Projects      |                  | - Explainer     |              | - Unified Diffs |
+|              | - Approvals     |                  | - Debugger      |              | - Auto-Backups  |
+|              | - Audit Trail   |                  | - Test Writer   |              +-----------------+
+|              +-----------------+                  +-----------------+                                 |
++-----------------------|---------------------------------------------------------------------|---+
+                        | HTTP (Localhost)                                                    | HTTPS
+                        v                                                                     v
+          +-------------------------------+                                 +-----------------------------------+
+          |       Ollama Local Daemon     |                                 |    Nebius Token Factory Cloud     |
+          |     (http://127.0.0.1:11434)  |                                 |     OpenRouter API Gateway        |
+          |  NVIDIA Nemotron 3.5 Bolt E4B |                                 |    NVIDIA Nemotron Inference      |
+          +-------------------------------+                                 +-----------------------------------+
 ```
 
 ---
@@ -144,6 +157,12 @@ OPENROUTER_API_KEY=your_openrouter_api_key_here
 NEBIUS_BASE_URL=https://openrouter.ai/api/v1
 NEBIUS_MODEL_ID=nvidia/nemotron-3-nano-30b-a3b
 
+# Hermes Agent Configuration (Optional Backend)
+HERMES_ENABLED=true
+HERMES_BIN_PATH=C:\Users\jayan\AppData\Local\hermes\bin\hermes.exe
+HERMES_TIMEOUT=120.0
+DEFAULT_AGENT_BACKEND=aegis
+
 # Aegis Workspace & Database Settings
 AEGIS_WORKSPACE=./workspace
 AEGIS_DATABASE_PATH=./aegis.db
@@ -172,18 +191,22 @@ http://127.0.0.1:8000
 
 ---
 
-## Dual-Provider Runtime Switching
+## Dual-Provider & Agent Backend Switching
 
-Aegis AI lets you switch between local Ollama inference and cloud inference **without restarting the server**:
+Aegis AI lets you switch both the inference provider and the agent reasoning backend **without restarting the server**:
 
-1. **Via Web UI**:
+1. **Inference Provider (Local / Cloud)**:
    - In the top header bar, click **Local** or **Cloud**.
    - The indicator dot reflects immediate connectivity (green for ready, amber for unconfigured, red for offline).
    - The active model tag updates dynamically.
+   - REST API: `GET /api/provider`, `POST /api/provider` with `{"provider": "ollama"}` or `{"provider": "cloud"}`.
 
-2. **Via REST API**:
-   - Query status: `GET /api/provider`
-   - Switch provider: `POST /api/provider` with payload `{"provider": "ollama"}` or `{"provider": "cloud"}`.
+2. **Agent Reasoning Backend (Native Aegis / Hermes Agent)**:
+   - In the top header bar, toggle between **Native Aegis** and **Hermes Agent**.
+   - **Native Aegis**: Uses Aegis's internal prompt synthesis and tool-calling engine.
+   - **Hermes Agent**: Wraps the local Hermes CLI (`hermes.exe chat`) sandboxed inside `./workspace` with external autonomous tools disabled (`--toolsets ""`).
+   - Consequential file modifications (`<<<PROPOSE_PATCH>>>`) and test commands (`<<<PROPOSE_COMMAND>>>`) emitted by Hermes are caught by Aegis's supervisor and placed into the SQLite human approval queue.
+   - Diagnostic status: `GET /api/hermes/status` inspects binary detection, version, and active provider readiness.
 
 ---
 
@@ -191,7 +214,7 @@ Aegis AI lets you switch between local Ollama inference and cloud inference **wi
 
 All tests execute deterministically and require **zero API credits**.
 
-### Run Full Verification (Python + Node.js — 57 Tests):
+### Run Full Verification (Python + Node.js — 76 Tests):
 ```bash
 python -m pytest; node tests/test_markdown_renderer.js
 ```
@@ -209,18 +232,20 @@ node tests/test_markdown_renderer.js
 Expected output:
 ```
 ============================= test session starts =============================
-collected 55 items
+platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
+collected 65 items
 tests\test_approvals.py ..                                               [  3%]
-tests\test_audit.py ..                                                   [  7%]
-tests\test_chat.py ..........                                            [ 25%]
-tests\test_frontend.py .......                                           [ 38%]
-tests\test_health.py ..                                                  [ 41%]
-tests\test_llm.py .......                                                [ 54%]
-tests\test_memory.py ....                                                [ 61%]
-tests\test_projects.py ..                                                [ 65%]
-tests\test_provider.py .............                                     [ 89%]
+tests\test_audit.py ..                                                   [  6%]
+tests\test_chat.py ..........                                            [ 21%]
+tests\test_frontend.py .........                                         [ 35%]
+tests\test_health.py ..                                                  [ 38%]
+tests\test_hermes.py ........                                            [ 50%]
+tests\test_llm.py .......                                                [ 61%]
+tests\test_memory.py ....                                                [ 67%]
+tests\test_projects.py ..                                                [ 70%]
+tests\test_provider.py .............                                     [ 90%]
 tests\test_workspace.py ......                                           [100%]
-============================= 55 passed in 2.52s ==============================
+============================= 65 passed in 6.42s ==============================
 
 --- Running Aegis AI Markdown & Syntax Highlighter Tests ---
 ✓ Safe URL sanitizer tests passed

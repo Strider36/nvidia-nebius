@@ -10,6 +10,7 @@ const state = {
   activeProjectId: null,
   activeSkillId: "",
   activeProvider: "ollama",
+  activeAgentBackend: (typeof localStorage !== "undefined" && localStorage && localStorage.getItem) ? (localStorage.getItem("aegis_agent_backend") || "aegis") : "aegis",
   health: null,
   providerStatus: null,
   projects: [],
@@ -31,6 +32,8 @@ const dom = {
   systemStatusBadge: document.getElementById("systemStatusBadge"),
   systemStatusText: document.getElementById("systemStatusText"),
   sidebarModelId: document.getElementById("sidebarModelId"),
+  btnBackendAegis: document.getElementById("btnBackendAegis"),
+  btnBackendHermes: document.getElementById("btnBackendHermes"),
   btnProviderOllama: document.getElementById("btnProviderOllama"),
   btnProviderCloud: document.getElementById("btnProviderCloud"),
   dotProviderOllama: document.getElementById("dotProviderOllama"),
@@ -1217,6 +1220,7 @@ dom.chatForm.addEventListener("submit", async (e) => {
       project_id: state.activeProjectId,
       skill_id: state.activeSkillId || null,
       provider: state.activeProvider || null,
+      agent_backend: state.activeAgentBackend || "aegis",
     };
 
     let streamResponse = null;
@@ -1881,6 +1885,41 @@ function setupEventListeners() {
     });
   });
 
+  // Agent Mode Switcher Buttons (Aegis vs Hermes)
+  function updateAgentBackendButtons() {
+    if (dom.btnBackendAegis && dom.btnBackendHermes) {
+      if (state.activeAgentBackend === "hermes") {
+        dom.btnBackendHermes.classList.add("active");
+        dom.btnBackendAegis.classList.remove("active");
+      } else {
+        dom.btnBackendAegis.classList.add("active");
+        dom.btnBackendHermes.classList.remove("active");
+      }
+    }
+  }
+  updateAgentBackendButtons();
+
+  if (dom.btnBackendAegis) {
+    dom.btnBackendAegis.addEventListener("click", () => {
+      state.activeAgentBackend = "aegis";
+      if (typeof localStorage !== "undefined" && localStorage && localStorage.setItem) {
+        localStorage.setItem("aegis_agent_backend", "aegis");
+      }
+      updateAgentBackendButtons();
+      showToast("Agent Mode: Aegis Native Reasoning Engine", "info");
+    });
+  }
+  if (dom.btnBackendHermes) {
+    dom.btnBackendHermes.addEventListener("click", () => {
+      state.activeAgentBackend = "hermes";
+      if (typeof localStorage !== "undefined" && localStorage && localStorage.setItem) {
+        localStorage.setItem("aegis_agent_backend", "hermes");
+      }
+      updateAgentBackendButtons();
+      showToast("Agent Mode: Hermes Agent v0.22.5 (Subprocess Sandbox)", "info");
+    });
+  }
+
   // Dual-Provider Switcher Buttons
   if (dom.btnProviderOllama) {
     dom.btnProviderOllama.addEventListener("click", () => handleSwitchProvider("ollama"));
@@ -2155,6 +2194,26 @@ async function loadSettingsModal() {
     if (cloudModelEl) cloudModelEl.textContent = "nvidia/nemotron-3-super-70b-instruct";
     if (ollamaUrlEl) ollamaUrlEl.textContent = "http://127.0.0.1:11434";
     if (wsPathEl) wsPathEl.textContent = "./workspace";
+
+    // Query Hermes Agent Backend Status
+    try {
+      const hStatus = await api("/api/hermes/status");
+      const hPill = document.getElementById("settingsHermesStatusPill");
+      const hText = document.getElementById("settingsHermesStatusText");
+      const hPath = document.getElementById("settingsHermesPath");
+      const hVer = document.getElementById("settingsHermesVersion");
+
+      if (hPill && hText) {
+        hPill.className = `status-pill ${hStatus.available ? 'ready' : 'warning'}`;
+        hText.textContent = hStatus.available
+          ? (hStatus.ollama_ready ? "Ready (Ollama Nemotron)" : "Ready (Cloud)")
+          : "Unavailable";
+      }
+      if (hPath) hPath.textContent = hStatus.binary_path || "Not found";
+      if (hVer) hVer.textContent = hStatus.version || "0.22.5";
+    } catch (hermesErr) {
+      console.warn("Failed to load Hermes status diagnostics:", hermesErr);
+    }
   } catch (err) {
     console.error("Failed to load settings diagnostics:", err);
   }

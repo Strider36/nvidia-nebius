@@ -20,6 +20,7 @@ from app.api.approvals import router as approvals_router
 from app.api.audit import router as audit_router
 from app.api.workspace import router as workspace_router
 from app.api.provider import router as provider_router
+from app.api.hermes import router as hermes_router
 
 # Locate frontend assets dynamically for both source and bundled builds
 FRONTEND_DIR = get_resource_path("frontend")
@@ -87,6 +88,7 @@ app.include_router(approvals_router)
 app.include_router(audit_router)
 app.include_router(workspace_router)
 app.include_router(provider_router)
+app.include_router(hermes_router)
 
 # Mount frontend static files
 if FRONTEND_DIR.exists():

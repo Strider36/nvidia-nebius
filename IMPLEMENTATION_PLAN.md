@@ -1,8 +1,8 @@
 # Aegis AI — Implementation Plan & Roadmap
 
-**Current Release:** v0.7.0  
+**Current Release:** v0.8.0  
 **Baseline Date:** 2026-10-30  
-**Status:** Milestones 1–7 Completed; Milestone 8 Planned  
+**Status:** Milestones 1–8 Completed; Milestone 9 Planned  
 
 ---
 
@@ -76,6 +76,20 @@ Aegis AI uses an incremental, additive engineering methodology designed to deliv
 |  - Zero card-in-card nesting: flattened surfaces in modals and forms                  |
 |  - Dedicated Settings & Provider Diagnostics dialog (#modalSettings)                  |
 |  - 67 automated tests (56 Python + 11 JavaScript) with 100% pass rate                |
++---------------------------------------------------------------------------------------+
+                                           |
+                                           v
++---------------------------------------------------------------------------------------+
+|  MILESTONE 8 (v0.8.0) - Hermes Agent Backend Integration [COMPLETED]                  |
+|  - Subprocess adapter (HermesService) invoking local Hermes Agent CLI (v0.22.5)       |
+|  - Support for local NVIDIA Nemotron via Ollama (http://127.0.0.1:11434/v1)          |
+|  - Sandboxed execution strictly inside ./workspace (--in <workspace_path>)            |
+|  - Unsupervised internal tools suppressed (--toolsets "")                             |
+|  - Human approval workflow preserved for patches, commands, and tasks                 |
+|  - JSONL streaming token parser integrated with native SSE (/api/chat/stream)         |
+|  - Strict anti-fallback invariant: local Ollama failures never failover to cloud     |
+|  - Frontend Agent Mode switcher & Hermes diagnostic settings card                     |
+|  - 76 automated tests (65 Python + 11 JavaScript) with 100% pass rate                |
 +---------------------------------------------------------------------------------------+
 ```
 
@@ -154,9 +168,25 @@ Aegis AI uses an incremental, additive engineering methodology designed to deliv
 
 ---
 
+### Milestone 8: Hermes Agent Optional Backend Integration (v0.8.0) — [COMPLETED]
+- [x] Host Environment Discovery: Located Hermes CLI at `C:\Users\jayan\AppData\Local\hermes\bin\hermes.exe` (`Hermes Agent v0.22.5`).
+- [x] Ollama Nemotron Compatibility: Validated invocation against local Ollama endpoint (`http://127.0.0.1:11434/v1`) using model `nemotron-3.5-bolt:e4b`.
+- [x] Subprocess Adapter (`HermesService`): Built secure non-interactive CLI wrapper passing queries via temporary files and capturing stdout.
+- [x] JSONL Streaming Protocol: Implemented real-time token generator decoding `{"type": "text", "text": "..."}` events into Aegis SSE chunks (`POST /api/chat/stream`).
+- [x] Workspace Sandboxing: Confined Hermes execution directory to `./workspace` (`--in <workspace_path>`).
+- [x] Autonomous Tool Suppression: Disabled rogue external tools by passing `--toolsets ""`.
+- [x] Human Approval Interception: Preserved the Aegis approval pipeline by extracting `<<<PROPOSE_PATCH>>>` and `<<<PROPOSE_COMMAND>>>` tags from Hermes output into SQLite `pending_approvals`.
+- [x] Anti-Fallback Invariant: Maintained strict local isolation on Ollama failures without silent cloud failover.
+- [x] Frontend Controls & Status: Added topbar Agent Mode switcher (`#agentModeSwitcher`) and Hermes status card in Settings modal (`#settingsHermesCard`).
+- [x] Diagnostic Route: Added `GET /api/hermes/status` checking binary presence, version, and provider readiness.
+- [x] Automated Test Suite: Added `tests/test_hermes.py` (8 test cases) and frontend regression test in `tests/test_frontend.py`.
+- [x] 76 automated tests (65 Python + 11 JavaScript) with 100% pass rate.
+
+---
+
 ## 3. Planned Milestones & Remaining Work
 
-### Milestone 8: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.8.0) — [PLANNED]
+### Milestone 9: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.9.0) — [PLANNED]
 - **Objective**: Enhance code AST inspection and integrate dense embedding vector search.
 - **Tasks**:
   1. *Tree-sitter WASM Highlighting*: Optional WebAssembly-based AST highlighting for deeper semantic colorization.

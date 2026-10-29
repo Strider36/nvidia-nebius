@@ -183,6 +183,29 @@ def test_frontend_unified_design_system_and_settings():
     assert "btnRunDiagnostics" in js_res.text
 
 
+def test_frontend_hermes_agent_controls():
+    """Verify Hermes Agent frontend controls, switcher buttons, and diagnostic card."""
+    html_res = client.get("/")
+    assert html_res.status_code == 200
+    assert 'id="agentModeSwitcher"' in html_res.text
+    assert 'id="btnBackendAegis"' in html_res.text
+    assert 'id="btnBackendHermes"' in html_res.text
+    assert 'id="settingsHermesCard"' in html_res.text
+    assert 'id="settingsHermesStatusPill"' in html_res.text
+
+    css_res = client.get("/styles.css")
+    assert css_res.status_code == 200
+    assert ".agent-mode-switcher-wrapper" in css_res.text
+
+    js_res = client.get("/app.js")
+    assert js_res.status_code == 200
+    assert "btnBackendAegis" in js_res.text
+    assert "btnBackendHermes" in js_res.text
+    assert "activeAgentBackend" in js_res.text
+    assert "/api/hermes/status" in js_res.text
+
+
+
 
 
 

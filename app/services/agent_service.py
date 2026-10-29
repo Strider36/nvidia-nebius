@@ -21,6 +21,7 @@ from app.models import (
 )
 from app.security.workspace import validate_allowlisted_command
 from app.services.approval_service import approval_service
+from app.services.hermes_service import hermes_service
 from app.services.llm_service import llm_service
 from app.services.memory_service import memory_service
 from app.services.skill_service import skill_service
@@ -243,13 +244,22 @@ class AgentService:
         else:
             history_msgs.append({"role": "user", "content": req.message})
 
-        # 5. Call LLM Service with per-request provider isolation
+        # 5. Call LLM Service or Hermes Service with per-request provider isolation
         target_provider = (req.provider.lower() if req.provider and req.provider.lower() in ("ollama", "cloud") else None) or settings.get_provider_snapshot()
-        raw_reply, err = llm_service.generate(
-            messages=history_msgs,
-            system_prompt=system_prompt,
-            provider=target_provider,
-        )
+        backend = (req.agent_backend or settings.default_agent_backend or "aegis").lower().strip()
+
+        if backend == "hermes":
+            raw_reply, err = hermes_service.generate(
+                messages=history_msgs,
+                system_prompt=system_prompt,
+                provider=target_provider,
+            )
+        else:
+            raw_reply, err = llm_service.generate(
+                messages=history_msgs,
+                system_prompt=system_prompt,
+                provider=target_provider,
+            )
 
         if err or raw_reply is None:
             # Safe error response without fabrications
@@ -275,6 +285,7 @@ class AgentService:
                 conversation_id=conv_id,
                 assistant_message=f"⚠️ Aegis AI Operational Notice: {error_msg}",
                 retrieved_memories=mem_dicts,
+                agent_backend=backend,
                 is_error=True,
                 error_message=error_msg,
             )
@@ -315,6 +326,7 @@ class AgentService:
             retrieved_memories=mem_dicts,
             pending_approval=pending_approval_dict,
             pending_approvals=pending_approvals_list,
+            agent_backend=backend,
             is_error=False,
         )
 
@@ -498,20 +510,30 @@ class AgentService:
         else:
             history_msgs.append({"role": "user", "content": req.message})
 
-        # 5. Call LLM Streaming with per-request provider isolation
+        # 5. Call LLM or Hermes Streaming with per-request provider isolation
         target_provider = (
             req.provider.lower()
             if req.provider and req.provider.lower() in ("ollama", "cloud")
             else None
         ) or settings.get_provider_snapshot()
+        backend = (req.agent_backend or settings.default_agent_backend or "aegis").lower().strip()
 
         accumulated_raw = ""
         try:
-            for token in llm_service.generate_stream(
-                messages=history_msgs,
-                system_prompt=system_prompt,
-                provider=target_provider,
-            ):
+            stream_iter = (
+                hermes_service.generate_stream(
+                    messages=history_msgs,
+                    system_prompt=system_prompt,
+                    provider=target_provider,
+                )
+                if backend == "hermes"
+                else llm_service.generate_stream(
+                    messages=history_msgs,
+                    system_prompt=system_prompt,
+                    provider=target_provider,
+                )
+            )
+            for token in stream_iter:
                 accumulated_raw += token
                 yield f"data: {json.dumps({'token': token, 'done': False})}\n\n"
         except GeneratorExit:
@@ -594,7 +616,7 @@ class AgentService:
         pending_approval_dict = all_pending_approvals[0].model_dump() if all_pending_approvals else None
         pending_approvals_list = [a.model_dump() for a in all_pending_approvals] if all_pending_approvals else None
 
-        yield f"data: {json.dumps({'done': True, 'conversation_id': conv_id, 'assistant_message': cleaned_reply.strip(), 'retrieved_memories': mem_dicts, 'pending_approval': pending_approval_dict, 'pending_approvals': pending_approvals_list})}\n\n"
+        yield f"data: {json.dumps({'done': True, 'conversation_id': conv_id, 'assistant_message': cleaned_reply.strip(), 'retrieved_memories': mem_dicts, 'agent_backend': backend, 'pending_approval': pending_approval_dict, 'pending_approvals': pending_approvals_list})}\n\n"
 
 
 agent_service = AgentService()

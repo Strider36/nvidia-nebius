@@ -170,6 +170,7 @@ class ChatRequest(BaseModel):
     project_id: Optional[str] = None
     skill_id: Optional[str] = None
     provider: Optional[str] = None
+    agent_backend: Optional[str] = Field("aegis", description="Agent reasoning backend ('aegis' or 'hermes')")
 
 
 class ChatResponse(BaseModel):
@@ -179,8 +180,19 @@ class ChatResponse(BaseModel):
     pending_approval: Optional[Dict[str, Any]] = None
     pending_approvals: Optional[List[Dict[str, Any]]] = None
     suggested_skill: Optional[str] = None
+    agent_backend: Optional[str] = "aegis"
     is_error: bool = False
     error_message: Optional[str] = None
+
+
+class HermesStatusResponse(BaseModel):
+    enabled: bool
+    available: bool
+    binary_path: str
+    version: Optional[str] = None
+    active_provider: str
+    ollama_ready: bool
+    message: Optional[str] = None
 
 
 # --- Approvals ---

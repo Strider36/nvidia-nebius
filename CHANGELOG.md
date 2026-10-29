@@ -4,6 +4,42 @@ All notable changes to **Aegis AI** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] — 2026-10-30
+
+### Added
+- **Hermes Agent Optional Backend Integration**:
+  - Implemented `HermesService` in `app/services/hermes_service.py` wrapping the locally installed Hermes Agent CLI (`C:\Users\jayan\AppData\Local\hermes\bin\hermes.exe` v0.22.5).
+  - Configurable backend selection via `settings.default_agent_backend`, request payload parameter `agent_backend: "aegis" | "hermes"` on `POST /api/chat` and `POST /api/chat/stream`.
+  - Added `GET /api/hermes/status` diagnostic endpoint reporting binary path, version, availability, active inference provider, and Ollama service readiness.
+- **Narrow Subprocess Execution & Streaming Protocol**:
+  - Invokes Hermes via `hermes chat --query-file <path> --format stream-json --oneshot` with model target matching active Aegis provider (local Ollama Nemotron endpoint `http://127.0.0.1:11434/v1` or configured Cloud provider).
+  - Implemented asynchronous token generator decoding JSONL streaming events (`{"type": "text", "text": "..."}`) into real-time Server-Sent Events (SSE).
+  - Handles client disconnects (`GeneratorExit`), enforcing process termination and subprocess cleanup.
+  - Enforced timeout control (`HERMES_TIMEOUT`, default 120s) with clean timeout exception handling.
+- **Strict Security, Sandboxing & Human Approval Guarantees**:
+  - Sandboxed execution: Hermes process working directory constrained to safe `./workspace` (`--in <workspace_path>`).
+  - Disabled arbitrary autonomous external tools by passing `--toolsets ""` to ensure consequential actions remain subject to Aegis supervision.
+  - Preserved human approval workflow: Hermes output containing `<<<PROPOSE_PATCH>>>`, `<<<PROPOSE_COMMAND>>>`, or `<<<PROPOSE_TASK>>>` is intercepted by `AgentService._parse_actions_and_format()` and stored in SQLite pending approvals table for explicit human authorization.
+  - Zero arbitrary shell or process execution permitted directly from frontend or Hermes CLI.
+  - Anti-fallback invariant: local Ollama inference failures strictly return HTTP 503/502 without silent cloud failover.
+- **Frontend Agent Mode Switcher & Diagnostic UI**:
+  - Added dedicated Agent Mode switcher in topbar (`#agentModeSwitcher`, `#btnBackendAegis`, `#btnBackendHermes`) allowing instant switching between Native Aegis and Hermes Agent.
+  - Persisted user backend preference in `localStorage` (`aegis_agent_backend`).
+  - Added Hermes Agent diagnostic card (`#settingsHermesCard`) in Settings modal showing binary path, version, and live status.
+- **Comprehensive Automated Test Coverage**:
+  - Added `tests/test_hermes.py` with 8 comprehensive unit and integration tests:
+    - Status reporting when binary is installed vs missing.
+    - CLI command generation for Ollama Nemotron and Cloud providers.
+    - Non-streaming synchronous text generation.
+    - Streaming JSONL token generation and client cancellation.
+    - Anti-fallback verification: local failures never silently route to cloud.
+    - Chat route backend selection (`agent_backend="hermes"`).
+    - Human approval proposal parsing and storage in SQLite database.
+  - Added frontend controls test in `tests/test_frontend.py` (`test_frontend_hermes_agent_controls`).
+  - Total automated test suite: 76 tests (65 Python + 11 Node) with 100% pass rate.
+
+---
+
 ## [0.7.0] — 2026-10-30
 
 ### Added

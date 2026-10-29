@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aegis-ai"
-version = "0.7.0"
+version = "0.8.0"
 description = "Aegis AI — Private Personal AI Operator with Persistent Memory, Safe Workspace, and Approvals"
 readme = "README.md"
 requires-python = ">=3.11"

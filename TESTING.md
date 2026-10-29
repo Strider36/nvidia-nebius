@@ -1,8 +1,8 @@
 # Aegis AI — Comprehensive Testing Guide & Verification Suite
 
-**Version:** 0.7.0  
+**Version:** 0.8.0  
 **Last Updated:** 2026-10-30  
-**Status:** 100% Passing (67/67 Automated Tests)  
+**Status:** 100% Passing (76/76 Automated Tests)  
 
 ---
 
@@ -13,7 +13,7 @@ All unit, integration, and security tests in Aegis AI adhere to five strict test
 2. **Persistent DB Isolation**: Each test run uses an isolated in-memory or temporary throwaway SQLite database (`tempfile.TemporaryDirectory`) ensuring zero state leakage between tests.
 3. **Dual-Stack Verification**: Tests validate both the Python backend application (via `pytest` and `fastapi.testclient.TestClient`) and the client-side JavaScript rendering engine (via Node.js `node:vm` harness).
 4. **Design System & Invariant Regression**: Dedicated assertions confirm the presence of all centralized Obsidian & Electric Violet tokens, mathematical typography, spacing tokens, shared component foundations (`.btn-*`, `.status-pill`, `.data-table`, `.empty-state`), standardized modal subsystem, geometric SVG iconography, and SSE streaming assets.
-5. **Anti-Fallback & Security Checks**: Automated assertions verify that local inference failures never trigger silent cloud fallbacks, path traversal attempts are rejected, and secrets are redacted from logs.
+5. **Anti-Fallback & Security Checks**: Automated assertions verify that local inference failures (both via direct Ollama and Hermes Agent) never trigger silent cloud fallbacks, path traversal attempts are rejected, and secrets are redacted from logs.
 
 ---
 
@@ -32,10 +32,11 @@ pip install -r requirements.txt
 
 ## 3. Test Suites & Coverage Breakdown
 
-### 3.1 Python Backend Test Suite (`pytest` — 56 Tests)
+### 3.1 Python Backend Test Suite (`pytest` — 65 Tests)
 
 | Test Module | Focus Area | Tested Invariants | Test Count |
 |---|---|---|:---:|
+| [`tests/test_hermes.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_hermes.py) | Hermes Agent Backend | Subprocess command composition, Ollama Nemotron integration, Cloud provider integration, non-streaming generation, JSONL streaming generator, client cancellation cleanup, anti-fallback invariant enforcement, chat route integration with proposal extraction into SQLite approvals | 8 |
 | [`tests/test_provider.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_provider.py) | Dual-Provider Inference | Ollama HTTP payload, streaming tokens (`stream: true`), 404 model missing, timeouts, connection errors, runtime switching, per-request isolation, anti-fallback invariant | 13 |
 | [`tests/test_llm.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_llm.py) | Cloud Provider Client | OpenAI SDK compatibility, incremental token streaming (`stream=True`), auth errors, quota limits, unconfigured fallback | 7 |
 | [`tests/test_chat.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_chat.py) | Chat Orchestration & SSE Streaming | Session history, memory context injection, proposal parsing (`<<<PROPOSE_PATCH>>>`, `<<<PROPOSE_COMMAND>>>`, `<<<PROPOSE_TASK>>>`), `/api/chat/stream` SSE tokens and completion, conversation rename endpoint | 10 |
@@ -45,8 +46,8 @@ pip install -r requirements.txt
 | [`tests/test_projects.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_projects.py) | Projects & Backlog | Project creation, milestone task tracking, status updates | 2 |
 | [`tests/test_health.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_health.py) | Health & Readiness | Health probe payload, non-blocking DB and provider connectivity, secret non-leakage | 2 |
 | [`tests/test_audit.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_audit.py) | Audit Trail Persistence | Audit logging to SQLite, automatic secret token scrubbing in logs | 2 |
-| [`tests/test_frontend.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_frontend.py) | Static Assets & UI | Asset serving (`index.html`, `styles.css`, `app.js`), suggestion chips, `#btnStop`, `#toastContainer`, `highlightSyntax`, `.tok-keyword`, v0.5.0 design tokens & motion system, v0.6.0 streaming DOM assets, v0.7.0 unified design tokens & Settings modal | 8 |
-| **Python Total** | | | **56** |
+| [`tests/test_frontend.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_frontend.py) | Static Assets & UI | Asset serving (`index.html`, `styles.css`, `app.js`), suggestion chips, `#btnStop`, `#toastContainer`, `highlightSyntax`, `.tok-keyword`, v0.5.0 design tokens & motion system, v0.6.0 streaming DOM assets, v0.7.0 unified design tokens & Settings modal, v0.8.0 Hermes Agent UI controls | 9 |
+| **Python Total** | | | **65** |
 
 ### 3.2 Frontend Markdown & Syntax Test Suite (`node` — 11 Tests)
 
@@ -65,7 +66,7 @@ pip install -r requirements.txt
 | **Test 11** | Unclosed Code Block Recovery | Verifies dangling/streaming code blocks close cleanly without layout corruption. |
 | **Frontend Total** | | **11** |
 
-**Grand Total Automated Tests:** **67 Tests** (56 Python + 11 JavaScript)
+**Grand Total Automated Tests:** **76 Tests** (65 Python + 11 JavaScript)
 
 ---
 
@@ -97,20 +98,21 @@ platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
 rootdir: E:\Code Tresure\nvidia-nebius-main\nvidia-nebius-main
 configfile: pyproject.toml
 plugins: anyio-4.14.2, langsmith-0.11.1
-collected 56 items
+collected 65 items
 
 tests\test_approvals.py ..                                               [  3%]
-tests\test_audit.py ..                                                   [  7%]
-tests\test_chat.py ..........                                            [ 25%]
-tests\test_frontend.py ........                                          [ 39%]
-tests\test_health.py ..                                                  [ 42%]
-tests\test_llm.py .......                                                [ 55%]
-tests\test_memory.py ....                                                [ 62%]
-tests\test_projects.py ..                                                [ 66%]
-tests\test_provider.py .............                                     [ 89%]
+tests\test_audit.py ..                                                   [  6%]
+tests\test_chat.py ..........                                            [ 21%]
+tests\test_frontend.py .........                                         [ 35%]
+tests\test_health.py ..                                                  [ 38%]
+tests\test_hermes.py ........                                            [ 50%]
+tests\test_llm.py .......                                                [ 61%]
+tests\test_memory.py ....                                                [ 67%]
+tests\test_projects.py ..                                                [ 70%]
+tests\test_provider.py .............                                     [ 90%]
 tests\test_workspace.py ......                                           [100%]
 
-============================= 56 passed in 2.61s ==============================
+============================= 65 passed in 6.42s ==============================
 ```
 
 ### 5.2 Node.js Test Session (`node tests/test_markdown_renderer.js`)
@@ -137,10 +139,12 @@ ALL 11 JAVASCRIPT MARKDOWN & SYNTAX TESTS PASSED SUCCESFULLY!
 The test suite includes dedicated regression tests for critical invariants:
 1. **Design System & Motion Tokens (`test_frontend.py:test_frontend_obsidian_violet_design_system_and_motion`)**: Validates presence of centralized Obsidian (`#0B0C0F`), Graphite (`#101116`), Platinum (`#E6E4EC`), and Electric Violet (`#A78BFA`) tokens, physics easing (`--ease-out`), keyframes (`heroEntrance`, `chipEntrance`), and SVG suggestion chips.
 2. **Unified Design System & Settings Modal (`test_frontend.py:test_frontend_unified_design_system_and_settings`)**: Validates mathematical typography tokens (`--font-size-2xs` to `--font-size-2xl`), spacing scale (`--space-3xs` to `--space-2xl`), shared component foundations (`.status-pill`, `.data-table`, `.empty-state`, `.panel-card`, `.btn-close`), and the complete Settings dialog structure (`#modalSettings`, `#settingsInferenceCard`, `#settingsNetworkCard`, `#settingsSandboxCard`, `#btnRunDiagnostics`).
-3. **Anti-Fallback Invariant (`test_provider.py:test_anti_fallback_invariant`)**: Confirms that when `LLM_PROVIDER=ollama`, an Ollama timeout or connection error returns an explicit connection error and never dispatches to cloud endpoints.
-4. **Path Traversal Rejection (`test_workspace.py:test_path_traversal_blocked`)**: Attempts to read `../../etc/passwd` or `..\\Windows\\win.ini` outside `./workspace` result in an immediate `PermissionError`.
-5. **Command Allowlist Enforcement (`test_approvals.py:test_disallowed_command`)**: Commands outside `pytest`, `python -m unittest`, and `npm test` are rejected during approval execution.
-6. **Secret Shield (`test_memory.py:test_secret_redaction`)**: Passwords, API tokens, and private keys submitted via prompts are scrubbed before storage in SQLite.
-7. **XSS & Protocol Hijack Blocking (`test_markdown_renderer.js`)**: Injected `<script>` tags and `javascript:` URIs are neutralized during Markdown sanitization.
-8. **Native SSE Token Streaming & Abort Resilience (`test_chat.py:test_chat_stream_tokens_and_completion_event`)**: Validates that chunked token events and completion metadata arrive in standard SSE format, that mid-stream proposals are parsed cleanly, and that client abort triggers immediate backend generator cleanup without corrupting history.
+3. **Hermes Agent UI Controls (`test_frontend.py:test_frontend_hermes_agent_controls`)**: Validates `#agentModeSwitcher`, `#btnBackendAegis`, `#btnBackendHermes`, and `#settingsHermesCard` existence, attributes, and styling in the DOM.
+4. **Hermes Subprocess Sandboxing & Anti-Fallback Invariant (`test_hermes.py:test_hermes_anti_fallback_on_ollama_failure`)**: Verifies that Hermes subprocess execution is locked to `--in <workspace_path>`, disables unmonitored tools (`--toolsets ""`), and strictly returns 503/502 on local Ollama timeout without silent cloud failover.
+5. **Anti-Fallback Invariant (`test_provider.py:test_anti_fallback_invariant`)**: Confirms that when `LLM_PROVIDER=ollama`, an Ollama timeout or connection error returns an explicit connection error and never dispatches to cloud endpoints.
+6. **Path Traversal Rejection (`test_workspace.py:test_path_traversal_blocked`)**: Attempts to read `../../etc/passwd` or `..\\Windows\\win.ini` outside `./workspace` result in an immediate `PermissionError`.
+7. **Command Allowlist Enforcement (`test_approvals.py:test_disallowed_command`)**: Commands outside `pytest`, `python -m unittest`, and `npm test` are rejected during approval execution.
+8. **Secret Shield (`test_memory.py:test_secret_redaction`)**: Passwords, API tokens, and private keys submitted via prompts are scrubbed before storage in SQLite.
+9. **XSS & Protocol Hijack Blocking (`test_markdown_renderer.js`)**: Injected `<script>` tags and `javascript:` URIs are neutralized during Markdown sanitization.
+10. **Native SSE Token Streaming & Abort Resilience (`test_chat.py:test_chat_stream_tokens_and_completion_event`)**: Validates that chunked token events and completion metadata arrive in standard SSE format, that mid-stream proposals are parsed cleanly, and that client abort triggers immediate backend generator cleanup without corrupting history.
 
