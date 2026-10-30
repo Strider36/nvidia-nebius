@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 import json
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from app.database import get_db_connection
 from app.models import ActionType, ApprovalResponse, ApprovalStatus
 from app.services.audit_service import audit_service
