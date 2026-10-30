@@ -189,6 +189,18 @@
             </div>
           </div>
 
+          <!-- Execution Mode Selector (Autonomous vs Supervised) -->
+          <div class="agent-mode-switcher-wrapper" id="executionModeSwitcher" title="Select Execution Mode">
+            <div class="provider-pill-switch" role="group" aria-label="Execution Mode Selector">
+              <button type="button" class="provider-pill-btn active" id="btnModeAutonomous" data-mode="autonomous" title="Autonomous Mode — Automatically executes permitted workspace operations">
+                <span class="provider-name">Autonomous</span>
+              </button>
+              <button type="button" class="provider-pill-btn" id="btnModeSupervised" data-mode="supervised" title="Supervised Mode — Requires approval before executing actions">
+                <span class="provider-name">Supervised</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Dual-Provider Selector -->
           <div class="provider-switcher-wrapper" id="providerSwitcher">
             <div class="provider-pill-switch" role="group" aria-label="Inference Provider Selector">
@@ -751,8 +763,12 @@
                 <span class="settings-kv-val" style="color:var(--color-success);">Confined to ./workspace (--in)</span>
               </div>
               <div class="settings-kv-row">
-                <span class="settings-kv-label">Tool Safeguard:</span>
-                <span class="settings-kv-val" style="color:var(--accent-primary);">Proposals Gated by Human Approvals</span>
+                <span class="settings-kv-label">Execution Mode:</span>
+                <span class="settings-kv-val" id="settingsHermesMode" style="color:var(--accent-primary);">Autonomous (Permitted Workspace Edits)</span>
+              </div>
+              <div class="settings-kv-row">
+                <span class="settings-kv-label">High-Risk Safeguard:</span>
+                <span class="settings-kv-val" style="color:var(--accent-primary);">Deletions & Traversal Gated by Approvals</span>
               </div>
             </div>
           </div>

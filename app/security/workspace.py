@@ -83,6 +83,15 @@ ALLOWLISTED_COMMAND_PREFIXES: List[Tuple[str, ...]] = [
     ("python", "-m", "unittest"),
     ("npm", "test"),
     ("node", "--test"),
+    ("ruff",),
+    ("python", "-m", "ruff"),
+    ("flake8",),
+    ("python", "-m", "flake8"),
+    ("mypy",),
+    ("python", "-m", "mypy"),
+    ("git", "status"),
+    ("git", "diff"),
+    ("python", "-m", "py_compile"),
 ]
 
 

@@ -1,8 +1,8 @@
 # Aegis AI — Implementation Plan & Roadmap
 
-**Current Release:** v0.8.1  
+**Current Release:** v0.8.2  
 **Baseline Date:** 2026-10-30  
-**Status:** Milestones 1–9 Completed; Milestone 10 Planned  
+**Status:** Milestones 1–10 Completed; Milestone 11 Planned  
 
 ---
 
@@ -195,9 +195,27 @@ Aegis AI uses an incremental, additive engineering methodology designed to deliv
 
 ---
 
+### Milestone 10: Hermes Autonomous Execution & Safety Boundaries (v0.8.2) — [COMPLETED]
+- [x] Root Cause Audit & Smallest Reliable Fix: Identified that Hermes was invoked with `--toolsets ""` and instructions forced `<<<PROPOSE_PATCH>>>`/`<<<PROPOSE_COMMAND>>>`, which `agent_service.py` unconditionally intercepted into SQLite pending approvals queue regardless of action safety.
+- [x] Dual Execution Modes Architecture: Added `ExecutionMode` enum (`autonomous`, `supervised`) in `app/models.py` and `app/config.py`, defaulting Hermes to `autonomous` and Native Aegis to `supervised`.
+- [x] Workspace File Tree Context Injection: Injected `./workspace` directory structure into system directives so Hermes can inspect and reason about existing project files with zero approval prompts.
+- [x] Supervisor-Mediated Autonomous Execution: Implemented `approval_service.execute_action_autonomously()`. In autonomous mode, routine patches (`<<<PROPOSE_PATCH>>>`), safe commands, and task items execute automatically with pre-modification backups created in `.aegis_backups`, approval records set to `SUCCEEDED`, and audit log entries recorded.
+- [x] Expanded Non-Destructive Allowlisted Commands: Broadened allowlist to include `pytest`, `python -m pytest`, `python -m unittest`, `npm test`, `node --test`, `ruff`, `flake8`, `mypy`, `git status`, `git diff`, and `python -m py_compile`.
+- [x] Multi-Step Autonomous Error Recovery: When an allowlisted test or build command fails in autonomous mode, the supervisor captures stdout/stderr and automatically prompts Hermes to analyze the failure and apply a fix.
+- [x] Essential Safety Boundaries:
+  - Deletions (`ActionType.FILE_DELETE`, `<<<PROPOSE_DELETE>>>`) strictly require human approval.
+  - Path traversal attempts (`../`, absolute paths outside `./workspace`) are rejected with `WorkspaceSecurityError` and security audit log entries.
+  - Access to credentials or secrets (`.env`, `.git/`, SSH keys) is blocked at the supervisor gateway.
+  - Destructive or chained commands (`&&`, `;`, `|`, `rm`) are strictly blocked.
+- [x] Frontend Mode Controls: Added `#executionModeSwitcher` (`#btnModeAutonomous`, `#btnModeSupervised`) in topbar and `#settingsHermesMode` in Settings modal.
+- [x] Verification of 10 Required Scenarios: Added 10 explicit test scenarios in `tests/test_hermes.py` covering inspection, file creation, bug fixes, running tests, multi-file edits, deletion approval, path traversal blocking, secret blocking, supervised mode fallback, and native Aegis isolation.
+- [x] 89 automated tests (78 Python + 11 JavaScript) with 100% pass rate.
+
+---
+
 ## 3. Planned Milestones & Remaining Work
 
-### Milestone 9: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.9.0) — [PLANNED]
+### Milestone 11: Tree-sitter Highlighting & Dense Semantic Retrieval (v0.9.0) — [PLANNED]
 - **Objective**: Enhance code AST inspection and integrate dense embedding vector search.
 - **Tasks**:
   1. *Tree-sitter WASM Highlighting*: Optional WebAssembly-based AST highlighting for deeper semantic colorization.

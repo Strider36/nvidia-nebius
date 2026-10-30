@@ -95,10 +95,16 @@ class HermesService:
             "version": version or "0.22.5",
             "active_provider": settings.active_provider,
             "ollama_ready": ollama_ready,
+            "execution_mode": settings.default_hermes_execution_mode,
             "message": msg,
         }
 
-    def _compose_prompt(self, messages: List[Dict[str, str]], system_prompt: str) -> str:
+    def _compose_prompt(
+        self,
+        messages: List[Dict[str, str]],
+        system_prompt: str,
+        execution_mode: str = "autonomous",
+    ) -> str:
         """Compose system directives and conversation turns into a coherent query for Hermes."""
         parts: List[str] = []
         if system_prompt:
@@ -110,7 +116,36 @@ class HermesService:
             content = m.get("content", "").strip()
             parts.append(f"**{role}**: {content}\n")
 
-        parts.append("\n### YOUR DIRECTIVE\nProvide the next assistant response conforming strictly to the system directives above. If proposing changes, use <<<PROPOSE_PATCH>>> or <<<PROPOSE_COMMAND>>> tags.")
+        if execution_mode == "autonomous":
+            directive = (
+                "\n### YOUR DIRECTIVE (AUTONOMOUS EXECUTION MODE)\n"
+                "You are executing as an autonomous agent in ./workspace. You are authorized to inspect workspace files, "
+                "create/edit files, run tests, and complete tasks directly.\n"
+                "- To create or edit files in ./workspace, output:\n"
+                '<<<PROPOSE_PATCH path="relative/path/to/file" reason="Reason" risk="Low">\n'
+                "[Exact Full New File Content]\n"
+                "</PROPOSE_PATCH>>>\n"
+                "- To run tests, builds, or non-destructive commands (pytest, python -m unittest, npm test, ruff, git status/diff), output:\n"
+                '<<<PROPOSE_COMMAND command="pytest ..." reason="Reason" risk="Low">>>\n'
+                "- To propose a task, output:\n"
+                '<<<PROPOSE_TASK title="Task title" description="Task description">>>\n'
+                "- HIGH-RISK ACTIONS: If deleting an existing file or directory, output:\n"
+                '<<<PROPOSE_DELETE path="relative/path" reason="Reason" risk="High">>>\n'
+                "Aegis supervisor will require explicit human approval for deletions.\n"
+                "SECURITY BOUNDARIES:\n"
+                "1. All operations must strictly reside inside the authorized workspace (./workspace).\n"
+                "2. Never access, read, or expose secrets, passwords, or credentials (.env, .git, keys).\n"
+                "3. Work independently until the requested task is fully completed or a genuine blocker occurs."
+            )
+        else:
+            directive = (
+                "\n### YOUR DIRECTIVE (SUPERVISED MODE)\n"
+                "Provide the next assistant response conforming strictly to the system directives above. "
+                "All file modifications, test commands, and tasks require explicit human approval before execution.\n"
+                "If proposing changes, use <<<PROPOSE_PATCH>>>, <<<PROPOSE_COMMAND>>>, or <<<PROPOSE_DELETE>>> tags."
+            )
+
+        parts.append(directive)
         return "\n".join(parts)
 
     def _build_command(self, query_file_path: str, provider: str) -> List[str]:
@@ -155,6 +190,7 @@ class HermesService:
         system_prompt: str,
         provider: str = "ollama",
         timeout: Optional[float] = None,
+        execution_mode: str = "autonomous",
     ) -> Tuple[Optional[str], Optional[str]]:
         """Non-streaming generation via Hermes Agent subprocess.
 
@@ -165,7 +201,7 @@ class HermesService:
             return None, f"Hermes binary not found at '{settings.hermes_bin_path}'."
 
         timeout_sec = timeout or settings.hermes_timeout
-        composed = self._compose_prompt(messages, system_prompt)
+        composed = self._compose_prompt(messages, system_prompt, execution_mode=execution_mode)
 
         # Write prompt safely to temporary file to avoid shell escaping issues
         temp_file = None
@@ -257,6 +293,7 @@ class HermesService:
         system_prompt: str,
         provider: str = "ollama",
         timeout: Optional[float] = None,
+        execution_mode: str = "autonomous",
     ) -> Iterator[str]:
         """Streaming generator yielding text token chunks via Hermes Agent subprocess.
 
@@ -268,7 +305,7 @@ class HermesService:
             return
 
         timeout_sec = timeout or settings.hermes_timeout
-        composed = self._compose_prompt(messages, system_prompt)
+        composed = self._compose_prompt(messages, system_prompt, execution_mode=execution_mode)
 
         temp_file = None
         proc = None

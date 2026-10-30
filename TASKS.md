@@ -1,6 +1,6 @@
 # Aegis AI — Task Tracker & Backlog
 
-**Version Baseline:** 0.8.1  
+**Version Baseline:** 0.8.2  
 **Last Updated:** 2026-10-30  
 **Status Key:**  
 - `[DONE]` Completed, verified with automated tests, and documented.
@@ -9,7 +9,24 @@
 
 ---
 
-## 1. Milestone 9: Full-System Optimization, Reliability & Verification (v0.8.1 — Completed)
+## 1. Milestone 10: Hermes Autonomous Execution & Safety Boundaries (v0.8.2 — Completed)
+
+| Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
+|---|---|:---:|:---:|---|---|
+| **TASK-1001** | Hermes execution pipeline audit & root cause analysis | Critical | `[DONE]` | None | Traced approval generation to unconditional interception in `agent_service._parse_actions_and_format()` and tool suppression `--toolsets ""`. |
+| **TASK-1002** | Dual execution modes data models & configuration | High | `[DONE]` | TASK-1001 | Added `ExecutionMode` enum (`autonomous`, `supervised`) in `models.py` and `config.py` with per-backend defaults (Hermes=autonomous, Aegis=supervised). |
+| **TASK-1003** | Workspace file tree context injection | High | `[DONE]` | TASK-1001 | Injected `./workspace` directory structure into system directives so Hermes can inspect and reason about files without approval dialogs. |
+| **TASK-1004** | Supervisor-mediated autonomous execution pipeline | Critical | `[DONE]` | TASK-1002 | Implemented `approval_service.execute_action_autonomously()`; routine patches and test runs execute automatically with auto-backups in `.aegis_backups`. |
+| **TASK-1005** | Allowlisted commands expansion for testing & linting | High | `[DONE]` | TASK-1004 | Added `pytest`, `python -m unittest`, `npm test`, `node --test`, `ruff`, `flake8`, `mypy`, `git status`, `git diff`, `py_compile`. |
+| **TASK-1006** | High-risk deletion approval safeguarding | Critical | `[DONE]` | TASK-1004 | Added `ActionType.FILE_DELETE` and `<<<PROPOSE_DELETE>>>`; file and directory deletions always require explicit human approval in both modes. |
+| **TASK-1007** | Path traversal & secret protection enforcement | Critical | `[DONE]` | TASK-1004 | Enforced backend validation rejecting `../`, paths outside `./workspace`, and attempts to access `.env`, `.git/`, or SSH keys with audit logging. |
+| **TASK-1008** | Multi-step autonomous error recovery | High | `[DONE]` | TASK-1004 | Captured command stdout/stderr and automatically fed failure outputs back to Hermes for iterative bug fixing in autonomous mode. |
+| **TASK-1009** | Frontend execution mode switcher & settings UI | High | `[DONE]` | TASK-1002 | Added `#executionModeSwitcher` (`#btnModeAutonomous`, `#btnModeSupervised`) to topbar and `#settingsHermesMode` in Settings modal. |
+| **TASK-1010** | 10 Scenario verification test suite | Critical | `[DONE]` | All v0.8.2 | Implemented 10 explicit test scenarios in `tests/test_hermes.py` verifying all autonomous and safety invariants (89 automated tests passing). |
+
+---
+
+## 2. Milestone 9: Full-System Optimization, Reliability & Verification (v0.8.1 — Completed)
 
 | Task ID | Description | Priority | Status | Dependencies | Acceptance Criteria |
 |---|---|:---:|:---:|---|---|

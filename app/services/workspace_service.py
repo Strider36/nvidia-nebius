@@ -130,8 +130,36 @@ class WorkspaceService:
             "new_sha256": new_sha256,
         }
 
+    def delete_path(self, relative_path: str) -> Dict[str, Any]:
+        """Delete a file or directory within workspace with backup and security validation."""
+        target_path = validate_workspace_path(relative_path)
+        if not target_path.exists():
+            raise FileNotFoundError(f"Path not found: '{relative_path}'")
+
+        # Create safety backup before deletion
+        self.backup_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        backup_path = self.backup_dir / f"{timestamp}_del_{target_path.name}"
+
+        is_directory = target_path.is_dir()
+        if is_directory:
+            import shutil
+            shutil.copytree(target_path, backup_path)
+            shutil.rmtree(target_path)
+        else:
+            content = target_path.read_text(encoding="utf-8", errors="replace")
+            backup_path.write_text(content, encoding="utf-8", newline="\n")
+            target_path.unlink()
+
+        return {
+            "success": True,
+            "deleted_path": relative_path,
+            "is_directory": is_directory,
+            "backup_created": str(backup_path),
+        }
+
     def execute_test_command(self, command_str: str) -> Dict[str, Any]:
-        """Run an explicitly allowlisted test command inside the workspace."""
+        """Run an explicitly allowlisted test or non-destructive command inside the workspace."""
         try:
             parts = shlex.split(command_str)
         except Exception as e:
@@ -139,7 +167,7 @@ class WorkspaceService:
 
         if not validate_allowlisted_command(parts):
             raise WorkspaceSecurityError(
-                f"Command '{command_str}' is not in the authorized test allowlist. Permitted commands: pytest, python -m pytest, python -m unittest, npm test, node --test."
+                f"Command '{command_str}' is not in the authorized command allowlist. Permitted commands: pytest, python -m pytest, python -m unittest, npm test, node --test, ruff, flake8, mypy, git status, git diff."
             )
 
         workspace_root = settings.workspace_path.resolve()

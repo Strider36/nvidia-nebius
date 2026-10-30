@@ -89,6 +89,8 @@ class Settings:
         self.hermes_timeout: float = float(os.getenv("HERMES_TIMEOUT", "90.0"))
         self.hermes_enabled: bool = os.getenv("HERMES_ENABLED", "true").lower() in ("1", "true", "yes") and os.path.exists(self.hermes_bin_path)
         self.default_agent_backend: str = os.getenv("AEGIS_DEFAULT_AGENT_BACKEND", "aegis").strip().lower()
+        self.default_hermes_execution_mode: str = os.getenv("AEGIS_HERMES_EXECUTION_MODE", "autonomous").strip().lower()
+        self.default_aegis_execution_mode: str = os.getenv("AEGIS_EXECUTION_MODE", "supervised").strip().lower()
 
         # Workspace & DB path resolution
         raw_workspace = os.getenv("AEGIS_WORKSPACE", "./workspace").strip()
@@ -188,6 +190,19 @@ class Settings:
     def is_configured(self) -> bool:
         """Returns True if the required model inference API key is present (backward compatibility)."""
         return bool(self.api_key and len(self.api_key) > 5)
+
+    def get_execution_mode(self, backend: Optional[str] = None, requested_mode: Optional[str] = None) -> str:
+        """Resolve effective execution mode ('autonomous' or 'supervised').
+
+        Hermes defaults to 'autonomous'.
+        Aegis native reasoning defaults to 'supervised'.
+        Explicit requested_mode always takes precedence when valid.
+        """
+        if requested_mode and requested_mode.lower() in ("autonomous", "supervised"):
+            return requested_mode.lower()
+        if backend and backend.lower() == "hermes":
+            return self.default_hermes_execution_mode
+        return self.default_aegis_execution_mode
 
     def ensure_directories(self) -> None:
         """Ensure necessary local directories exist."""

@@ -164,6 +164,11 @@ class ConversationResponse(BaseModel):
     messages: Optional[List[MessageResponse]] = None
 
 
+class ExecutionMode(str, Enum):
+    AUTONOMOUS = "autonomous"
+    SUPERVISED = "supervised"
+
+
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=8000)
     conversation_id: Optional[str] = None
@@ -171,6 +176,10 @@ class ChatRequest(BaseModel):
     skill_id: Optional[str] = None
     provider: Optional[str] = None
     agent_backend: Optional[str] = Field("aegis", description="Agent reasoning backend ('aegis' or 'hermes')")
+    execution_mode: Optional[str] = Field(
+        None,
+        description="Execution mode ('autonomous' or 'supervised'). Defaults to 'autonomous' for Hermes, 'supervised' for Aegis."
+    )
 
 
 class ChatResponse(BaseModel):
@@ -181,6 +190,8 @@ class ChatResponse(BaseModel):
     pending_approvals: Optional[List[Dict[str, Any]]] = None
     suggested_skill: Optional[str] = None
     agent_backend: Optional[str] = "aegis"
+    execution_mode: Optional[str] = "supervised"
+    executed_actions: Optional[List[Dict[str, Any]]] = None
     is_error: bool = False
     error_message: Optional[str] = None
 
@@ -192,6 +203,7 @@ class HermesStatusResponse(BaseModel):
     version: Optional[str] = None
     active_provider: str
     ollama_ready: bool
+    execution_mode: Optional[str] = "autonomous"
     message: Optional[str] = None
 
 
@@ -210,6 +222,7 @@ class ApprovalStatus(str, Enum):
 class ActionType(str, Enum):
     FILE_CREATE = "file_create"
     FILE_PATCH = "file_patch"
+    FILE_DELETE = "file_delete"
     RUN_COMMAND = "run_command"
     TASK_CREATE = "task_create"
     MEMORY_DELETE = "memory_delete"

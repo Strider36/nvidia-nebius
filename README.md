@@ -1,24 +1,32 @@
 # Aegis AI — Private Personal AI Operator
 
-[![Version](https://img.shields.io/badge/version-0.8.1-A78BFA.svg)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.8.2-A78BFA.svg)](pyproject.toml)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-80%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-89%20passed%20(100%25)-brightgreen.svg)](TESTING.md)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
 [![Theme](https://img.shields.io/badge/design-Unified%20Obsidian%20%26%20Electric%20Violet-101116.svg)](frontend/styles.css)
 
 **Aegis AI** is a functional, privacy-first personal AI assistant and autonomous coding operator featuring **Dual-Provider Inference** and **Pluggable Agent Backends**:
 1. **Local Inference**: Powered by **NVIDIA Nemotron 3.5 Bolt E4B** running locally on your hardware via **Ollama** (`http://127.0.0.1:11434`).
 2. **Cloud Inference**: Powered by **NVIDIA Nemotron** via **Nebius Token Factory** or **OpenRouter** (`https://openrouter.ai/api/v1`).
-3. **Pluggable Agent Backends**: Choose seamlessly between **Native Aegis** reasoning engine and **Hermes Agent** backend CLI (`v0.22.5`).
+3. **Pluggable Agent Backends & Execution Modes**: Choose seamlessly between **Native Aegis** reasoning engine and **Hermes Agent** backend CLI (`v0.22.5`), with configurable **Autonomous Mode** (default for Hermes) and **Supervised Mode**.
 
-It combines a **Unified Obsidian & Electric Violet Design System** across all 7 views with **native SSE token streaming**, an optional **Hermes Agent backend**, a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** before any code patch or allowlisted test runner is executed.
+It combines a **Unified Obsidian & Electric Violet Design System** across all 7 views with **native SSE token streaming**, an optional **Hermes Agent backend with autonomous execution**, a zero-dependency multi-language syntax highlighter, resilient Markdown rendering, client-side request cancellation, persistent semantic memory in SQLite, structured project/task organization, reusable developer skills, and a restricted workspace sandbox requiring **human-in-the-loop approval** for high-risk actions.
 
 ---
 
 ## Key Capabilities
 
-- **Pluggable Agent Backends (Native Aegis + Hermes Agent)**: Seamlessly toggle between **Native Aegis** reasoning engine and the **Hermes Agent CLI** (`v0.22.5`). Hermes operates via a narrow subprocess invocation protocol (`hermes chat --query-file ... --format stream-json --oneshot`) backed directly by your local NVIDIA Nemotron Ollama instance or configured Cloud provider.
-- **Strict Hermes Subprocess Sandboxing & Human Approval Enforcement**: Hermes process execution is constrained strictly to `./workspace` (`--in <workspace_path>`) with external tools disabled (`--toolsets ""`). File modifications and command actions emitted by Hermes (`<<<PROPOSE_PATCH>>>`, `<<<PROPOSE_COMMAND>>>`) are intercepted by Aegis's supervisor and placed into the SQLite pending approvals queue—preventing arbitrary shell access or unattended filesystem writes.
+- **Pluggable Agent Backends & Dual Execution Modes**: Seamlessly toggle between **Native Aegis** reasoning engine and the **Hermes Agent CLI** (`v0.22.5`), with two operational modes:
+  - **Autonomous Mode (Default for Hermes)**: Automatically executes routine permitted actions inside `./workspace`—reading/inspecting files via file tree context injection, creating/editing files, running allowlisted test runners/linters (`pytest`, `python -m unittest`, `npm test`, `ruff`, `flake8`, `mypy`), debugging errors, and continuing multi-step tasks without repeated human approval dialogs.
+  - **Supervised Mode (Default for Native Aegis)**: Requires explicit human review and approval before any file modification or test execution.
+- **Strict Hermes Subprocess Sandboxing & Essential Safety Boundaries**: Hermes process execution is constrained strictly to `./workspace` (`--in <workspace_path>`) with external tools disabled (`--toolsets ""`). All autonomous executions are mediated by Aegis's supervisor, which enforces:
+  - **High-Risk Deletions**: Deleting files or directories (`<<<PROPOSE_DELETE>>>`) always requires explicit human approval via the Aegis approvals lifecycle.
+  - **Path Traversal Defense**: Accessing files outside `./workspace` (`../`, absolute paths) is strictly blocked.
+  - **Secret Shield**: Direct access or exposure of passwords, API keys, credentials, `.env`, `.git/`, and SSH keys is strictly blocked with security audit logging.
+  - **Command Allowlisting**: Only safe, non-destructive test runner and linter commands are permitted; arbitrary destructive system commands are rejected.
+  - **Automated Rollback Backups**: Before any patch or deletion, timestamped backups are automatically saved in `.aegis_backups/`.
+  - **Immutable Audit Logging**: Every autonomous action and approval transition is logged to SQLite with execution outcomes.
 - **Unified Premium Design System (Across All 7 Views)**: A single cohesive design language applied uniformly to **Main Chat, Skills, Memory, Approvals, Workspace, Audit, and Settings**. Features mathematical typography tokens (`--font-size-2xs` to `--font-size-2xl`), standardized spacing scales (`--space-3xs` to `--space-2xl`), hairline borders (`#292B32`), accessible 28x28px geometric SVG close buttons (`aria-label="Close modal"`), and clean, flat surfaces eliminating gratuitous card-in-card nesting.
 - **Dedicated Settings & Provider Diagnostics View**: Comprehensive `#modalSettings` dialog inspecting configured provider, local vs cloud models, loopback interfaces (`127.0.0.1:8000`), SQLite engine status, sandbox boundaries, Hermes Agent diagnostics, and one-click connectivity diagnostics (`#btnRunDiagnostics`).
 - **Native Server-Sent Events (SSE) Token Streaming**: Real-time token streaming from local Ollama (`stream: true`), cloud models (`stream=True`), and Hermes streaming JSONL events through `POST /api/chat/stream`. Features client-side chunk decoding via `ReadableStream`, a realistic blinking streaming cursor (`.streaming-cursor`), intelligent auto-scroll locking, active stream cancellation via `#btnStop` and `Escape`, and automatic fallback protection.
@@ -203,10 +211,20 @@ Aegis AI lets you switch both the inference provider and the agent reasoning bac
 
 2. **Agent Reasoning Backend (Native Aegis / Hermes Agent)**:
    - In the top header bar, toggle between **Native Aegis** and **Hermes Agent**.
-   - **Native Aegis**: Uses Aegis's internal prompt synthesis and tool-calling engine.
-   - **Hermes Agent**: Wraps the local Hermes CLI (`hermes.exe chat`) sandboxed inside `./workspace` with external autonomous tools disabled (`--toolsets ""`).
-   - Consequential file modifications (`<<<PROPOSE_PATCH>>>`) and test commands (`<<<PROPOSE_COMMAND>>>`) emitted by Hermes are caught by Aegis's supervisor and placed into the SQLite human approval queue.
+   - **Native Aegis**: Uses Aegis's internal prompt synthesis and tool-calling engine (defaults to Supervised Mode).
+   - **Hermes Agent**: Wraps the local Hermes CLI (`hermes.exe chat`) sandboxed inside `./workspace` with external autonomous tools disabled (`--toolsets ""`), operating via Aegis's supervisor (defaults to Autonomous Mode).
    - Diagnostic status: `GET /api/hermes/status` inspects binary detection, version, and active provider readiness.
+
+3. **Execution Modes (Autonomous Mode / Supervised Mode)**:
+   - In the top header bar, toggle between **⚡ Autonomous** and **🛡️ Supervised**:
+   - **Autonomous Mode (Default for Hermes)**:
+     - Automatically executes routine permitted actions inside `./workspace` (reading workspace files, creating/editing files, running allowlisted test runners/linters, fixing bugs, multi-file edits, multi-step error recovery).
+     - No repeated human approval prompts for routine operations.
+     - Preserves safety boundaries: deletions (`<<<PROPOSE_DELETE>>>`) require human approval, and attempts to access files outside `./workspace` or read credentials (`.env`, `.git/`, SSH keys) are blocked.
+   - **Supervised Mode**:
+     - Requires explicit human approval before any file modification or command execution.
+     - Suitable for sensitive projects or strict review environments.
+   - Mode is visible in the UI header and persisted in settings.
 
 ---
 
@@ -214,7 +232,7 @@ Aegis AI lets you switch both the inference provider and the agent reasoning bac
 
 All tests execute deterministically and require **zero API credits**.
 
-### Run Full Verification (Python + Node.js — 80 Tests):
+### Run Full Verification (Python + Node.js — 89 Tests):
 ```bash
 python -m pytest; node tests/test_markdown_renderer.js
 ```

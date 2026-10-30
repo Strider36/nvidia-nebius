@@ -213,6 +213,9 @@ class ApprovalService:
                 )
                 execution_result = created_task.model_dump()
 
+            elif approval.action_type == ActionType.FILE_DELETE:
+                execution_result = workspace_service.delete_path(approval.target)
+
             elif approval.action_type == ActionType.MEMORY_DELETE:
                 from app.services.memory_service import memory_service
                 deleted = memory_service.delete_memory(approval.target)
@@ -249,6 +252,102 @@ class ApprovalService:
         approval.resolved_at = completed_at
         approval.result = execution_result
         return approval
+
+    @staticmethod
+    def execute_action_autonomously(
+        action_type: ActionType,
+        target: str,
+        details: Dict[str, Any],
+        reason: str,
+        risk: str,
+    ) -> Tuple[ApprovalResponse, Dict[str, Any]]:
+        """Execute a permitted routine action autonomously with full safety validation, backups, and audit logging."""
+        approval_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        details_json = json.dumps(details)
+
+        outcome_status = ApprovalStatus.SUCCEEDED
+        err_msg: Optional[str] = None
+        execution_result: Dict[str, Any] = {}
+
+        try:
+            if action_type in (ActionType.FILE_CREATE, ActionType.FILE_PATCH):
+                path = target
+                content = details.get("proposed_content", "")
+                expected_sha = details.get("original_sha256")
+                execution_result = workspace_service.apply_patch(
+                    relative_path=path,
+                    proposed_content=content,
+                    expected_sha256=expected_sha,
+                )
+            elif action_type == ActionType.RUN_COMMAND:
+                cmd = details.get("command", target)
+                execution_result = workspace_service.execute_test_command(cmd)
+                if execution_result.get("exit_code") != 0:
+                    outcome_status = ApprovalStatus.FAILED
+                    err_msg = execution_result.get("stderr") or f"Command exited with {execution_result.get('exit_code')}"
+            elif action_type == ActionType.TASK_CREATE:
+                from app.services.project_service import project_service
+                from app.models import TaskCreate
+                created_task = project_service.create_task(
+                    TaskCreate(
+                        title=details.get("title", target),
+                        description=details.get("description", ""),
+                        project_id=details.get("project_id"),
+                        due_date=details.get("due_date"),
+                    )
+                )
+                execution_result = created_task.model_dump()
+            else:
+                raise ValueError(f"High-risk action '{action_type.value}' cannot be executed autonomously.")
+        except Exception as e:
+            outcome_status = ApprovalStatus.FAILED
+            err_msg = str(e)
+            execution_result = {"error": err_msg}
+
+        completed_at = datetime.now(timezone.utc).isoformat()
+
+        with get_db_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO approvals (id, action_type, target, details, reason, risk, status, proposed_at, resolved_at, result)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    approval_id,
+                    action_type.value,
+                    target,
+                    details_json,
+                    reason,
+                    risk,
+                    outcome_status.value,
+                    now,
+                    completed_at,
+                    json.dumps(execution_result),
+                ),
+            )
+
+        audit_service.record_event(
+            action_type=action_type.value,
+            proposed_operation=f"Autonomous {action_type.value} on {target}",
+            approval_status=ApprovalStatus.APPROVED.value,
+            execution_outcome=outcome_status.value,
+            error_summary=err_msg,
+        )
+
+        appr = ApprovalResponse(
+            id=approval_id,
+            action_type=action_type,
+            target=target,
+            details=details,
+            reason=reason,
+            risk=risk,
+            status=outcome_status,
+            proposed_at=now,
+            resolved_at=completed_at,
+            result=execution_result,
+        )
+        return appr, execution_result
 
 
 approval_service = ApprovalService()

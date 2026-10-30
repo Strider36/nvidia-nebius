@@ -11,6 +11,9 @@ const state = {
   activeSkillId: "",
   activeProvider: "ollama",
   activeAgentBackend: (typeof localStorage !== "undefined" && localStorage && localStorage.getItem) ? (localStorage.getItem("aegis_agent_backend") || "aegis") : "aegis",
+  executionMode: (typeof localStorage !== "undefined" && localStorage && localStorage.getItem)
+    ? (localStorage.getItem("aegis_execution_mode") || ((localStorage.getItem("aegis_agent_backend") || "aegis") === "hermes" ? "autonomous" : "supervised"))
+    : "autonomous",
   health: null,
   providerStatus: null,
   projects: [],
@@ -34,6 +37,8 @@ const dom = {
   sidebarModelId: document.getElementById("sidebarModelId"),
   btnBackendAegis: document.getElementById("btnBackendAegis"),
   btnBackendHermes: document.getElementById("btnBackendHermes"),
+  btnModeAutonomous: document.getElementById("btnModeAutonomous"),
+  btnModeSupervised: document.getElementById("btnModeSupervised"),
   btnProviderOllama: document.getElementById("btnProviderOllama"),
   btnProviderCloud: document.getElementById("btnProviderCloud"),
   dotProviderOllama: document.getElementById("dotProviderOllama"),
@@ -1221,6 +1226,7 @@ dom.chatForm.addEventListener("submit", async (e) => {
       skill_id: state.activeSkillId || null,
       provider: state.activeProvider || null,
       agent_backend: state.activeAgentBackend || "aegis",
+      execution_mode: state.executionMode || (state.activeAgentBackend === "hermes" ? "autonomous" : "supervised"),
     };
 
     let streamResponse = null;
@@ -1885,7 +1891,7 @@ function setupEventListeners() {
     });
   });
 
-  // Agent Mode Switcher Buttons (Aegis vs Hermes)
+  // Agent Backend Switcher Buttons (Aegis vs Hermes)
   function updateAgentBackendButtons() {
     if (dom.btnBackendAegis && dom.btnBackendHermes) {
       if (state.activeAgentBackend === "hermes") {
@@ -1899,24 +1905,69 @@ function setupEventListeners() {
   }
   updateAgentBackendButtons();
 
+  // Execution Mode Switcher Buttons (Autonomous vs Supervised)
+  function updateExecutionModeButtons() {
+    if (dom.btnModeAutonomous && dom.btnModeSupervised) {
+      if (state.executionMode === "autonomous") {
+        dom.btnModeAutonomous.classList.add("active");
+        dom.btnModeSupervised.classList.remove("active");
+      } else {
+        dom.btnModeSupervised.classList.add("active");
+        dom.btnModeAutonomous.classList.remove("active");
+      }
+    }
+    const modeSettingEl = document.getElementById("settingsHermesMode");
+    if (modeSettingEl) {
+      modeSettingEl.textContent = state.executionMode === "autonomous" ? "Autonomous (Permitted Workspace Edits)" : "Supervised (Human Approval Required)";
+    }
+  }
+  updateExecutionModeButtons();
+
   if (dom.btnBackendAegis) {
     dom.btnBackendAegis.addEventListener("click", () => {
       state.activeAgentBackend = "aegis";
+      state.executionMode = "supervised";
       if (typeof localStorage !== "undefined" && localStorage && localStorage.setItem) {
         localStorage.setItem("aegis_agent_backend", "aegis");
+        localStorage.setItem("aegis_execution_mode", "supervised");
       }
       updateAgentBackendButtons();
-      showToast("Agent Mode: Aegis Native Reasoning Engine", "info");
+      updateExecutionModeButtons();
+      showToast("Agent Mode: Aegis Native Reasoning Engine (Supervised)", "info");
     });
   }
   if (dom.btnBackendHermes) {
     dom.btnBackendHermes.addEventListener("click", () => {
       state.activeAgentBackend = "hermes";
+      state.executionMode = "autonomous";
       if (typeof localStorage !== "undefined" && localStorage && localStorage.setItem) {
         localStorage.setItem("aegis_agent_backend", "hermes");
+        localStorage.setItem("aegis_execution_mode", "autonomous");
       }
       updateAgentBackendButtons();
-      showToast("Agent Mode: Hermes Agent v0.22.5 (Subprocess Sandbox)", "info");
+      updateExecutionModeButtons();
+      showToast("Agent Mode: Hermes Agent (Autonomous Execution Enabled)", "info");
+    });
+  }
+
+  if (dom.btnModeAutonomous) {
+    dom.btnModeAutonomous.addEventListener("click", () => {
+      state.executionMode = "autonomous";
+      if (typeof localStorage !== "undefined" && localStorage && localStorage.setItem) {
+        localStorage.setItem("aegis_execution_mode", "autonomous");
+      }
+      updateExecutionModeButtons();
+      showToast("Execution Mode: Autonomous (Auto-executes permitted actions)", "info");
+    });
+  }
+  if (dom.btnModeSupervised) {
+    dom.btnModeSupervised.addEventListener("click", () => {
+      state.executionMode = "supervised";
+      if (typeof localStorage !== "undefined" && localStorage && localStorage.setItem) {
+        localStorage.setItem("aegis_execution_mode", "supervised");
+      }
+      updateExecutionModeButtons();
+      showToast("Execution Mode: Supervised (Requires human approval)", "info");
     });
   }
 

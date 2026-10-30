@@ -190,6 +190,9 @@ def test_frontend_hermes_agent_controls():
     assert 'id="agentModeSwitcher"' in html_res.text
     assert 'id="btnBackendAegis"' in html_res.text
     assert 'id="btnBackendHermes"' in html_res.text
+    assert 'id="executionModeSwitcher"' in html_res.text
+    assert 'id="btnModeAutonomous"' in html_res.text
+    assert 'id="btnModeSupervised"' in html_res.text
     assert 'id="settingsHermesCard"' in html_res.text
     assert 'id="settingsHermesStatusPill"' in html_res.text
 
@@ -201,7 +204,10 @@ def test_frontend_hermes_agent_controls():
     assert js_res.status_code == 200
     assert "btnBackendAegis" in js_res.text
     assert "btnBackendHermes" in js_res.text
+    assert "btnModeAutonomous" in js_res.text
+    assert "btnModeSupervised" in js_res.text
     assert "activeAgentBackend" in js_res.text
+    assert "executionMode" in js_res.text
     assert "/api/hermes/status" in js_res.text
 
 

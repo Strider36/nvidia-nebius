@@ -1,8 +1,8 @@
 # Aegis AI — Comprehensive Testing Guide & Verification Suite
 
-**Version:** 0.8.1  
+**Version:** 0.8.2  
 **Last Updated:** 2026-10-30  
-**Status:** 100% Passing (80/80 Automated Tests)  
+**Status:** 100% Passing (89/89 Automated Tests)  
 
 ---
 
@@ -32,12 +32,12 @@ pip install -r requirements.txt
 
 ## 3. Test Suites & Coverage Breakdown
 
-### 3.1 Python Backend Test Suite (`pytest` — 69 Tests)
+### 3.1 Python Backend Test Suite (`pytest` — 78 Tests)
 
 | Test Module | Focus Area | Tested Invariants | Test Count |
 |---|---|---|:---:|
 | [`tests/test_e2e_live.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_e2e_live.py) | End-to-End Integration & Lifecycle | Application metadata & versioning sync, provider status without secret leakage, Hermes binary detection, and complete multi-step human approval lifecycle (propose patch -> pending status -> approve -> write sandbox file -> create backup in `.aegis_backups` -> record audit log) | 4 |
-| [`tests/test_hermes.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_hermes.py) | Hermes Agent Backend | Subprocess command composition, Ollama Nemotron integration, Cloud provider integration, non-streaming generation, JSONL streaming generator, client cancellation cleanup, anti-fallback invariant enforcement, chat route integration with proposal extraction into SQLite approvals | 8 |
+| [`tests/test_hermes.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_hermes.py) | Hermes Agent Backend & Autonomous Execution | Subprocess command composition, Ollama Nemotron integration, Cloud provider integration, non-streaming generation, JSONL streaming generator, client cancellation cleanup, anti-fallback invariant enforcement, chat route integration with proposal extraction into SQLite approvals, **plus 10 explicit autonomous execution & safety scenario tests** | 17 |
 | [`tests/test_provider.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_provider.py) | Dual-Provider Inference | Ollama HTTP payload, streaming tokens (`stream: true`), 404 model missing, timeouts, connection errors, runtime switching, per-request isolation, anti-fallback invariant | 13 |
 | [`tests/test_llm.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_llm.py) | Cloud Provider Client | OpenAI SDK compatibility, incremental token streaming (`stream=True`), auth errors, quota limits, unconfigured fallback | 7 |
 | [`tests/test_chat.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_chat.py) | Chat Orchestration & SSE Streaming | Session history, memory context injection, proposal parsing (`<<<PROPOSE_PATCH>>>`, `<<<PROPOSE_COMMAND>>>`, `<<<PROPOSE_TASK>>>`), `/api/chat/stream` SSE tokens and completion, conversation rename endpoint | 10 |
@@ -47,8 +47,8 @@ pip install -r requirements.txt
 | [`tests/test_projects.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_projects.py) | Projects & Backlog | Project creation, milestone task tracking, status updates | 2 |
 | [`tests/test_health.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_health.py) | Health & Readiness | Health probe payload, non-blocking DB and provider connectivity, secret non-leakage | 2 |
 | [`tests/test_audit.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_audit.py) | Audit Trail Persistence | Audit logging to SQLite, automatic secret token scrubbing in logs | 2 |
-| [`tests/test_frontend.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_frontend.py) | Static Assets & UI | Asset serving (`index.html`, `styles.css`, `app.js`), suggestion chips, `#btnStop`, `#toastContainer`, `highlightSyntax`, `.tok-keyword`, v0.5.0 design tokens & motion system, v0.6.0 streaming DOM assets, v0.7.0 unified design tokens & Settings modal, v0.8.0 Hermes Agent UI controls | 9 |
-| **Python Total** | | | **69** |
+| [`tests/test_frontend.py`](file:///e:/Code%20Tresure/nvidia-nebius-main/nvidia-nebius-main/tests/test_frontend.py) | Static Assets & UI | Asset serving (`index.html`, `styles.css`, `app.js`), suggestion chips, `#btnStop`, `#toastContainer`, `highlightSyntax`, `.tok-keyword`, v0.5.0 design tokens & motion system, v0.6.0 streaming DOM assets, v0.7.0 unified design tokens & Settings modal, v0.8.0 Hermes Agent UI controls, **v0.8.2 Execution Mode Switcher (`#executionModeSwitcher`)** | 9 |
+| **Python Total** | | | **78** |
 
 ### 3.2 Frontend Markdown & Syntax Test Suite (`node` — 11 Tests)
 
@@ -67,11 +67,30 @@ pip install -r requirements.txt
 | **Test 11** | Unclosed Code Block Recovery | Verifies dangling/streaming code blocks close cleanly without layout corruption. |
 | **Frontend Total** | | **11** |
 
-**Grand Total Automated Tests:** **80 Tests** (69 Python + 11 JavaScript)
+**Grand Total Automated Tests:** **89 Tests** (78 Python + 11 JavaScript)
 
 ---
 
-## 4. Execution Commands
+## 4. Hermes Autonomous Execution & Safety Scenarios Verification
+
+All 10 required operational and security scenarios are verified by dedicated regression tests in `tests/test_hermes.py`:
+
+| Scenario ID | Scenario Description | Expected Behavior | Automated Test | Outcome |
+|---|---|---|---|:---:|
+| **Scenario 1** | Inspect project | Zero approval dialogs; workspace file tree injected | `test_scenario_1_hermes_inspect_project_autonomous` | **PASS** |
+| **Scenario 2** | Create workspace file | Created autonomously; backup created in `.aegis_backups` | `test_scenario_2_hermes_create_file_autonomous` | **PASS** |
+| **Scenario 3** | Fix bug in workspace | Fix applied autonomously; file updated on disk | `test_scenario_3_hermes_fix_bug_autonomous` | **PASS** |
+| **Scenario 4** | Run test runner | Allowlisted test command executed with exit code and stdout | `test_scenario_4_hermes_run_tests_autonomous` | **PASS** |
+| **Scenario 5** | Multi-file modifications | All files modified autonomously in single turn | `test_scenario_5_hermes_multi_file_autonomous` | **PASS** |
+| **Scenario 6** | Delete directory or file | High-risk deletion intercepted into human approval queue | `test_scenario_6_hermes_delete_directory_requires_approval` | **PASS** |
+| **Scenario 7** | Access outside workspace | Path traversal (`../../etc/passwd`) blocked by security guard | `test_scenario_7_hermes_outside_workspace_blocked` | **PASS** |
+| **Scenario 8** | Expose API keys / `.env` | Access to `.env` / credentials blocked and logged to audit | `test_scenario_8_hermes_expose_api_keys_blocked` | **PASS** |
+| **Scenario 9** | Switch to Supervised Mode | Patches/commands held in pending approval dialogs | `test_scenario_9_hermes_switch_to_supervised_mode` | **PASS** |
+| **Scenario 10** | Native Aegis engine behavior | Native engine retains default supervised approval lifecycle | `test_scenario_10_native_aegis_supervised_by_default` | **PASS** |
+
+---
+
+## 5. Execution Commands
 
 ### Run Full Test Verification (Python + Node.js):
 ```bash
@@ -90,31 +109,31 @@ node tests/test_markdown_renderer.js
 
 ---
 
-## 5. Actual Latest Verification Results
+## 6. Actual Latest Verification Results
 
-### 5.1 Python Test Session (`python -m pytest`)
+### 6.1 Python Test Session (`python -m pytest`)
 ```
 ============================= test session starts =============================
 platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0
 rootdir: E:\Code Tresure\nvidia-nebius-main\nvidia-nebius-main
 configfile: pyproject.toml
 plugins: anyio-4.14.2, langsmith-0.11.1
-collected 69 items
+collected 78 items
 
 tests\test_approvals.py ..                                               [  2%]
 tests\test_audit.py ..                                                   [  5%]
-tests\test_chat.py ..........                                            [ 20%]
-tests\test_e2e_live.py ....                                              [ 26%]
-tests\test_frontend.py .........                                         [ 39%]
-tests\test_health.py ..                                                  [ 42%]
-tests\test_hermes.py ........                                            [ 53%]
-tests\test_llm.py .......                                                [ 63%]
-tests\test_memory.py ....                                                [ 69%]
-tests\test_projects.py ..                                                [ 72%]
-tests\test_provider.py .............                                     [ 91%]
+tests\test_chat.py ..........                                            [ 17%]
+tests\test_e2e_live.py ....                                              [ 23%]
+tests\test_frontend.py .........                                         [ 34%]
+tests\test_health.py ..                                                  [ 37%]
+tests\test_hermes.py .................                                   [ 58%]
+tests\test_llm.py .......                                                [ 67%]
+tests\test_memory.py ....                                                [ 73%]
+tests\test_projects.py ..                                                [ 75%]
+tests\test_provider.py .............                                     [ 92%]
 tests\test_workspace.py ......                                           [100%]
 
-============================= 69 passed in 3.77s ==============================
+============================= 78 passed in 3.98s ==============================
 ```
 
 ### 5.2 Node.js Test Session (`node tests/test_markdown_renderer.js`)

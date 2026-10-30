@@ -4,6 +4,58 @@ All notable changes to **Aegis AI** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] — 2026-10-30
+
+### Added & Fixed
+- **Hermes Autonomous Execution Engine**:
+  - Resolved root cause of repeated approval interruptions: `agent_service._parse_actions_and_format()` previously forced all patch and command proposals into SQLite `PENDING_APPROVAL` records unconditionally.
+  - Implemented supervisor-mediated autonomous execution pipeline (`approval_service.execute_action_autonomously()`) allowing Hermes in autonomous mode to execute routine workspace patches, safe test commands, and task additions without manual approval dialogs.
+  - Automatically generates pre-modification backups in `.aegis_backups/` and logs execution outcomes directly into SQLite `audit_log` with status `SUCCEEDED`.
+- **Dual Execution Modes Architecture**:
+  - Added `ExecutionMode` enum (`autonomous`, `supervised`) in `app/models.py` and `app/config.py`.
+  - Configurable defaults: Hermes defaults to `autonomous`, Native Aegis engine defaults to `supervised`.
+  - Added `execution_mode` to `ChatRequest`, `ChatResponse`, and `HermesStatusResponse`.
+  - Added topbar `#executionModeSwitcher` (`#btnModeAutonomous`, `#btnModeSupervised`) and Settings card controls (`#settingsHermesMode`), making active execution mode prominent and configurable in real-time.
+- **Zero-Approval Project Inspection**:
+  - Dynamically injected `./workspace` directory structure into system directives (`_build_workspace_tree()`), allowing Hermes to search, analyze, and inspect workspace files with zero user interruptions.
+- **Expanded Safe Command Allowlist**:
+  - Broadened `ALLOWLISTED_COMMAND_PREFIXES` in `app/security/workspace.py` to support non-destructive inspection, linting, and testing: `pytest`, `python -m pytest`, `python -m unittest`, `npm test`, `node --test`, `ruff`, `flake8`, `mypy`, `git status`, `git diff`, and `python -m py_compile`.
+- **Essential Safety Boundaries (Non-Bypassable Invariants)**:
+  - **High-Risk Deletions**: Added `ActionType.FILE_DELETE` and `<<<PROPOSE_DELETE>>>` tag parsing; file and directory deletions always require explicit human approval via the Aegis approvals lifecycle in both modes. Added `workspace_service.delete_path()` with automated backup creation.
+  - **Path Traversal Guard**: Strictly validates target paths; parent directory navigation (`../`, absolute paths outside `./workspace`) is rejected with `WorkspaceSecurityError` and logged to the security audit trail.
+  - **Secret Shield**: Direct access or exposure of passwords, API keys, credentials, `.env`, `.git/`, and SSH keys is blocked at the supervisor gateway.
+  - **Command Sanitization**: Rejects destructive shell commands (`rm`, `del`, `curl`, `chmod`) and command chaining operators (`&&`, `;`, `|`, `&`, `>`, `<`).
+  - **Zero Silent Fallback**: Preserved anti-fallback invariant; local Ollama/Hermes failures never silently route to cloud.
+- **Multi-Step Autonomous Error Recovery**:
+  - In autonomous mode, when an executed allowlisted test or build command exits with non-zero code, the supervisor captures stdout and stderr and automatically feeds the output back to Hermes for iterative bug fixing.
+- **Regression Verification Suite & 10 Verified Scenarios**:
+  - Added 10 explicit test scenarios to `tests/test_hermes.py` covering: project inspection, file creation, bug fixing, test execution, multi-file edits, deletion approval requirement, path traversal blocking, secret protection, supervised mode switching, and native engine isolation.
+  - Added frontend execution mode controls test in `tests/test_frontend.py`.
+  - Total test suite: 89 passed (78 Python + 11 JavaScript) with 100% pass rate.
+
+### Files Changed
+- `app/__init__.py`
+- `app/config.py`
+- `app/models.py`
+- `app/security/workspace.py`
+- `app/services/agent_service.py`
+- `app/services/approval_service.py`
+- `app/services/hermes_service.py`
+- `app/services/workspace_service.py`
+- `frontend/app.js`
+- `frontend/index.html`
+- `tests/test_frontend.py`
+- `tests/test_hermes.py`
+- `pyproject.toml`
+- `README.md`
+- `ARCHITECTURE.md`
+- `IMPLEMENTATION_PLAN.md`
+- `TASKS.md`
+- `TESTING.md`
+- `CHANGELOG.md`
+
+---
+
 ## [0.8.1] — 2026-10-30
 
 ### Fixed & Optimized
